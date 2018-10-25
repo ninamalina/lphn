@@ -5,8 +5,10 @@ from itertools import product
 # from numpy import random
 import numpy as np
 import time
+import os.path
+from subprocess import call
 
-class Simple():
+class SimpleClassifier:
     def __init__(self, G, edge_types):
         self.G = G
         self.edge_types = edge_types
@@ -25,6 +27,7 @@ class Simple():
             print (edge_type)
             nodes_0 = [n for n in self.G.nodes if n.startswith(edge_type[0])]
             nodes_1 = [n for n in self.G.nodes if n.startswith(edge_type[1])]
+            print(len(nodes_0), len(nodes_1))
             selected_edges = [e for e in self.G.edges if (e[0].startswith(edge_type[0]) and e[1].startswith(edge_type[1]))]
             G_edge_type = nx.Graph()
             G_edge_type.add_nodes_from(nodes_0 + nodes_1)
@@ -70,7 +73,7 @@ class Simple():
                         if ind % 10000000 == 0:
                             print(ind)
 
-            print(time.time() - t)
+            print(time.time() - t, len(all_possible_edges))
 
             G_train = self.G.copy()
             G_train.remove_edges_from(sampled_positive)
@@ -90,10 +93,10 @@ class Simple():
         t = time.time()
         page_rank = nx.pagerank_scipy(G_train)
         t1 = time.time()
-        print(t1 - t)
-        shortest_paths = dict(nx.all_pairs_shortest_path_length(G_train, cutoff=10))
-        t2 = time.time()
-        print(t2 - t1)
+        print("pagerank time", t1 - t)
+        # shortest_paths = nx.all_pairs_shortest_path_length(G_train, cutoff=10)
+        # t2 = time.time()
+        # print("shortest paths time", t2 - t1)
         for pair in edge_bunch:
             commmon_neighbors = nx.common_neighbors(G_train, pair[0], pair[1])
             jaccard_coefficient = nx.jaccard_coefficient(G_train, [pair])
@@ -104,9 +107,10 @@ class Simple():
             page_rank_0 = page_rank[pair[0]]
             page_rank_1 = page_rank[pair[1]]
 
-            if pair[0] in shortest_paths and pair[1] in shortest_paths[pair[0]]:
-                reciprocal_shortest_path = 1 / shortest_paths[pair[0]][pair[1]] # preveri ce obstaja, ce ne, 0
-            else:
+            try:
+                shortest_path = nx.shortest_path_length(G_train, pair[0], pair[1])
+                reciprocal_shortest_path = 1 / shortest_path
+            except nx.NetworkXNoPath:
                 reciprocal_shortest_path = 0
 
             f = [degree_0,
@@ -127,6 +131,39 @@ class Simple():
 
         return X
 
+
+class PathEmbeddingClassifier:
+    def __init__(self, G):
+        self.G = G
+        pass
+
+    def evaluate(self):
+        pass
+
+    def generate_paths(self, path, out_file):
+        if os.path.isfile(out_file):
+            pass
+        else:
+            #TODO: generate file with paths
+            pass
+
+    def generate_embeddings(self, out_file=None):
+        if out_file is not None: #os.path.isfile(out_file):
+            pass
+        else:
+            #TODO: generate file with paths
+            call(["./code_metapath2vec/metapath2vec", "-train", "data/exp/output.women.w50.l5.txt", "-output", "data/exp/embed.women.wew.w50.l5",
+                  "-pp", "1", "-size", "32", "-window", "7", "-negative", "5", "-threads", "32"])
+            # ./metapath2vec -train ../in_dbis/dbis.cac.w1000.l100.txt -output ../out_dbis/dbis.cac.w1000.l100 -pp 1 -size 128 -window 7 -negative 5 -threads 32
+
+            pass
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
     f = open("data/bio/parsed/bio_edgelist.tsv")
@@ -146,5 +183,8 @@ if __name__ == '__main__':
     edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
 
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
-    simple_model = Simple(GC, edge_types)
+    simple_model = SimpleClassifier(GC, edge_types)
     simple_model.evaluate()
+
+    # m2v = PathEmbeddingClassifier(G)
+    # m2v.generate_embeddings()
