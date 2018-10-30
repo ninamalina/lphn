@@ -217,7 +217,7 @@ if __name__ == '__main__':
             print(num, edge_type)
             G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type)
             simple_model = SimpleClassifier(GC, num)
-            simple_model.prepare_train(G_train, train_edges[0:10000])
+            simple_model.prepare_train(G_train, train_edges)
             Y_test = [1 for i in test_positive] + [0 for i in test_negative]
             simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
 
