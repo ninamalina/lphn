@@ -59,7 +59,7 @@ def split_test_train(G, edge_type, test_size=0.2):
                     print(ind)
     else:
         for i in range(len(nodes_0)):
-            for j in range(i, len(nodes_0)):
+            for j in range(i+1, len(nodes_0)):
                 e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
                 train_edges.append(e)
                 ind += 1
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     # diseases = [n for n in G.nodes if n.startswith("disease")]
     # drugs = [n for n in G.nodes if n.startswith("drug")]
 
-    edge_types = [("gene", "gene"), ("disease", "gene"), ("drug","gene"), ("gene", "gene")]
+    edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
     print(G.number_of_selfloops())
 
     G.remove_edges_from(G.selfloop_edges())
@@ -225,8 +225,8 @@ if __name__ == '__main__':
             Y_test = [1 for i in test_positive] + [0 for i in test_negative]
             simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
 
-            # simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
-            # simple_model.train()
-            # simple_model.predict()
-            # print("AUC:", simple_model.evaluate())
-            # print("confussion:", simple_model.evaluate(metric="confussion"))
+            simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
+            simple_model.train()
+            simple_model.predict()
+            print("AUC:", simple_model.evaluate())
+            print("confussion:", simple_model.evaluate(metric="confussion"))
