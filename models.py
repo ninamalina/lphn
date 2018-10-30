@@ -127,6 +127,8 @@ class SimpleClassifier:
 
             try:
                 shortest_path = nx.shortest_path_length(G_train, pair[0], pair[1])
+                if shortest_path == 0:
+                    print(pair)
                 reciprocal_shortest_path = 1 / shortest_path
             except nx.NetworkXNoPath:
                 reciprocal_shortest_path = 0
@@ -207,8 +209,10 @@ if __name__ == '__main__':
     # diseases = [n for n in G.nodes if n.startswith("disease")]
     # drugs = [n for n in G.nodes if n.startswith("drug")]
 
-    edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
+    edge_types = [("gene", "gene"), ("disease", "gene"), ("drug","gene"), ("gene", "gene")]
+    print(G.number_of_selfloops())
 
+    G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
 
 
@@ -221,8 +225,8 @@ if __name__ == '__main__':
             Y_test = [1 for i in test_positive] + [0 for i in test_negative]
             simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
 
-            simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
-            simple_model.train()
-            simple_model.predict()
-            print("AUC:", simple_model.evaluate())
-            print("confussion:", simple_model.evaluate(metric="confussion"))
+            # simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
+            # simple_model.train()
+            # simple_model.predict()
+            # print("AUC:", simple_model.evaluate())
+            # print("confussion:", simple_model.evaluate(metric="confussion"))
