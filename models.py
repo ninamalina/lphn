@@ -37,7 +37,7 @@ def split_test_train(G, edge_type, test_size=0.2):
 
     while len(test_negative) < m:
         i, j = np.random.randint(low=0, high=len(nodes_0)), np.random.randint(low=0, high=len(nodes_1))
-        if not G_edge_type.has_edge(nodes_0[i], nodes_1[j]):
+        if nodes_0[i] != nodes_1[j] and not G_edge_type.has_edge(nodes_0[i], nodes_1[j]):
             e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
             test_negative.add(e)
 
