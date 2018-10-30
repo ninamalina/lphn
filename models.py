@@ -2,7 +2,6 @@ import networkx as nx
 from itertools import combinations
 import random
 from itertools import product
-# from numpy import random
 import numpy as np
 import time
 import os.path
@@ -32,7 +31,7 @@ def split_test_train(G, edge_type, test_size=0.2):
     m = int(test_size * n_edges)
     test_positive = random.sample(G_edge_type.edges, m)
     test_positive = [(e[1], e[0]) if e[0] > e[1] else e for e in test_positive]
-    print(test_positive)
+    # print(test_positive)
 
     test_negative = set()
 
@@ -42,7 +41,7 @@ def split_test_train(G, edge_type, test_size=0.2):
             e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
             test_negative.add(e)
 
-    print(test_negative)
+    # print(test_negative)
 
     print(len(nodes_0), len(nodes_1))
     print(len(test_positive), len(test_negative))
@@ -82,13 +81,15 @@ def split_test_train(G, edge_type, test_size=0.2):
 
 
 class SimpleClassifier:
-    def __init__(self, G, method="RF"):
+    def __init__(self, G, seed, method="RF"):
         self.G = G
         self.method = method
+        random.seed(seed)
+        np.random.seed(seed)
 
     def train(self):
         if self.method == "RF":
-            print(self.X_train)
+            # print(self.X_train)
             # print(self.Y_train)
             self.clf = RandomForestClassifier(n_estimators=10)
             self.clf.fit(self.X_train, self.Y_train)
@@ -156,6 +157,12 @@ class SimpleClassifier:
         self.X_test = self.create_features(G_train, test_edges)
         self.Y_test = Y_test
 
+    def save(self, path):
+        np.save(path + "X_train", self.X_train)
+        np.save(path + "X_test", self.X_test)
+        np.save(path + "Y_train", self.Y_train)
+        np.save(path + "Y_test", self.Y_test)
+
 
 class PathEmbeddingClassifier:
     def __init__(self, G):
@@ -205,18 +212,17 @@ if __name__ == '__main__':
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
 
 
-
-    # m2v = PathEmbeddingClassifier(G)
-    # m2v.generate_embeddings()
-
     for edge_type in edge_types:
-        print(edge_type)
-        G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type)
-        simple_model = SimpleClassifier(GC)
-        simple_model.prepare_train(G_train, train_edges)
-        Y_test = [1 for i in test_positive] + [0 for i in test_negative]
-        simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
-        simple_model.train()
-        simple_model.predict()
-        print("AUC:", simple_model.evaluate())
-        print("confussion:", simple_model.evaluate(metric="confussion"))
+        for num in range(5):
+            print(num, edge_type)
+            G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type)
+            simple_model = SimpleClassifier(GC, num)
+            simple_model.prepare_train(G_train, train_edges[0:10000])
+            Y_test = [1 for i in test_positive] + [0 for i in test_negative]
+            simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
+
+            simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
+            simple_model.train()
+            simple_model.predict()
+            print("AUC:", simple_model.evaluate())
+            print("confussion:", simple_model.evaluate(metric="confussion"))
