@@ -139,12 +139,13 @@ class MetaPathGeneratorWomen:
 
 
 class MetaPathGeneratorBio:
-    def __init__(self):
+    def __init__(self, seed):
         self.gene_genes = defaultdict(list)
         self.gene_diseases = defaultdict(list)
         self.disease_genes = defaultdict(list)
         self.drug_genes = defaultdict(list)
         self.gene_drugs = defaultdict(list)
+        random.seed(seed)
 
     def read_data(self, G):
         for edge in G.edges():
@@ -180,17 +181,42 @@ class MetaPathGeneratorBio:
     def generate_random_g_di_g(self, outfilename, numwalks, walklength):
         # gene-disease-gene
         outfile = open(outfilename, 'w')
-        for gene in self.gene_diseases:
+        all_genes = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
+        for gene in all_genes:
             g0 = gene
             for j in xrange(0, numwalks):  # num walks
                 outline = g0
                 for i in xrange(0, walklength):
-                    diseases = self.gene_diseases[gene]
-                    disease = random.sample(diseases, 1).pop()
-                    outline += " " + disease
-                    genes = self.disease_genes[disease]
-                    gene = random.sample(genes, 1).pop()
-                    outline += " " + gene
+                    if gene in self.gene_diseases:
+                        diseases = self.gene_diseases[gene]
+                        disease = random.sample(diseases, 1).pop()
+                        outline += " " + disease
+                        genes = self.disease_genes[disease]
+                        gene = random.sample(genes, 1).pop()
+                        outline += " " + gene
+                    else:
+                        outline += " " + gene + " " + gene
+
+                outfile.write(outline + "\n")
+
+    def generate_random_g_dr_g(self, outfilename, numwalks, walklength):
+        # gene-drug-gene
+        outfile = open(outfilename, 'w')
+        all_genes = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
+        for gene in all_genes:
+            g0 = gene
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    if gene in self.gene_drugs:
+                        drugs = self.gene_drugs[gene]
+                        drug = random.sample(drugs, 1).pop()
+                        outline += " " + drug
+                        genes = self.drug_genes[drug]
+                        gene = random.sample(genes, 1).pop()
+                        outline += " " + gene
+                    else:
+                        outline += " " + gene + " " + gene
 
                 outfile.write(outline + "\n")
 
