@@ -1,14 +1,16 @@
 import networkx as nx
-from itertools import combinations
 import random
-from itertools import product
 import numpy as np
 import time
-import os.path
 from subprocess import call
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
+from generate_meta_paths import MetaPathGeneratorBio
+from collections import defaultdict
+from sklearn import linear_model
+from sklearn.ensemble import AdaBoostClassifier
+import os
 
 edge_functions = {
     "hadamard": lambda a, b: a * b,
@@ -17,7 +19,10 @@ edge_functions = {
     "l2": lambda a, b: np.abs(a - b) ** 2,
 }
 
-def split_test_train(G, edge_type, test_size=0.2):
+def split_test_train(G, edge_type, seed, test_size=0.2):
+    random.seed(seed)
+    np.random.seed(seed)
+
     nodes_0 = [n for n in G.nodes if n.startswith(edge_type[0])]
     nodes_1 = [n for n in G.nodes if n.startswith(edge_type[1])]
 
@@ -31,7 +36,6 @@ def split_test_train(G, edge_type, test_size=0.2):
     m = int(test_size * n_edges)
     test_positive = random.sample(G_edge_type.edges, m)
     test_positive = [(e[1], e[0]) if e[0] > e[1] else e for e in test_positive]
-    # print(test_positive)
 
     test_negative = set()
 
@@ -41,33 +45,20 @@ def split_test_train(G, edge_type, test_size=0.2):
             e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
             test_negative.add(e)
 
-    # print(test_negative)
-
     print(len(nodes_0), len(nodes_1))
-    print(len(test_positive), len(test_negative))
 
     t = time.time()
     train_edges = []
-    ind = 0
     if edge_type[0] != edge_type[1]:
         for n0 in nodes_0:
             for n1 in nodes_1:
                 e = (n0, n1) if n0 < n1 else (n1, n0)
                 train_edges.append(e)
-                ind += 1
-                if ind % 10000000 == 0:
-                    print(ind)
     else:
         for i in range(len(nodes_0)):
             for j in range(i+1, len(nodes_0)):
                 e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
                 train_edges.append(e)
-                ind += 1
-                if ind % 10000000 == 0:
-                    print(ind)
-
-
-    print(len(train_edges))
 
     train_edges = set(train_edges).difference(test_positive).difference(test_negative)
     print("time:", time.time() - t, "| train edges", len(train_edges))
@@ -75,26 +66,44 @@ def split_test_train(G, edge_type, test_size=0.2):
     G_train.remove_edges_from(test_positive)
     # TODO: remove "dependencies" in some graphs
 
-    print(len(test_positive), len(test_negative), len(train_edges))
-    print(len(test_positive) + len(test_negative) + len(train_edges))
     return G, G_train, list(test_positive), list(test_negative), list(train_edges)
 
 
 class SimpleClassifier:
-    def __init__(self, G, seed, method="RF"):
-        self.G = G
-        self.method = method
-        random.seed(seed)
-        np.random.seed(seed)
 
-    def train(self):
-        if self.method == "RF":
-            # print(self.X_train)
-            # print(self.Y_train)
+    def __init__(self, G_train, train_edges, test_positive, test_negative, path):
+        self.train_edges = train_edges
+        self.test_edges = test_positive + test_negative
+
+        if os.path.exists(path + "train_edges.npy") :
+            print ("Reading files")
+            train_edges_2 = np.load(path + "train_edges.npy")
+            if np.array_equal(self.train_edges, train_edges_2) :
+                self.X_train = np.load(path + "X_train.npy")
+                self.Y_train = np.load(path + "Y_train.npy")
+                self.X_test = np.load(path + "X_test.npy")
+                self.Y_test = np.load(path + "Y_test.npy")
+        else:
+            print("Preparing data")
+            self.prepare_train(G_train, train_edges)
+            Y_test = [1 for i in test_positive] + [0 for i in test_negative]
+            self.prepare_test(G_train, self.test_edges, Y_test)
+            self.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
+
+
+    def train(self, method, seed=0):
+        if method == "RF":
             self.clf = RandomForestClassifier(n_estimators=10)
-            self.clf.fit(self.X_train, self.Y_train)
+        elif method == "LASSO":
+            self.clf = linear_model.Lasso(alpha = 0.1)
+        elif method == "LR":
+            self.clf = linear_model.LogisticRegression(class_weight="balanced", random_state=seed)
+        elif method == "AB":
+            self.clf = AdaBoostClassifier(n_estimators=100)
+        elif method == "SGD":
+            self.clf = linear_model.SGDClassifier(max_iter=1000)
 
-        # linear regression; svm; random forest
+        self.clf.fit(self.X_train, self.Y_train)
 
     def predict(self):
         self.Y_pred = self.clf.predict(self.X_test)
@@ -102,19 +111,16 @@ class SimpleClassifier:
 
     def evaluate(self, metric="AUC"):
         if metric == "AUC":
-            return roc_auc_score(self.Y_test, self.Y_pred)
+            return roc_auc_score(self.Y_test, np.round(self.Y_pred))
         elif metric == "confussion":
-            return confusion_matrix(self.Y_test, self.Y_pred)
+            return confusion_matrix(self.Y_test, np.round(self.Y_pred))
         else:
             return("Metric not known!")
 
     def create_features(self, G_train, edge_bunch):
         i = 0
         X = []
-        t = time.time()
         page_rank = nx.pagerank_scipy(G_train)
-        t1 = time.time()
-        print("pagerank time", t1 - t)
         for pair in edge_bunch:
             commmon_neighbors = len(list(nx.common_neighbors(G_train, pair[0], pair[1])))
             jaccard_coefficient = nx.jaccard_coefficient(G_train, [pair]).next()[2]
@@ -125,13 +131,11 @@ class SimpleClassifier:
             page_rank_0 = page_rank[pair[0]]
             page_rank_1 = page_rank[pair[1]]
 
-            try:
-                shortest_path = nx.shortest_path_length(G_train, pair[0], pair[1])
-                if shortest_path == 0:
-                    print(pair)
-                reciprocal_shortest_path = 1 / shortest_path
-            except nx.NetworkXNoPath:
-                reciprocal_shortest_path = 0
+            # try:
+            #     shortest_path = nx.shortest_path_length(G_train, pair[0], pair[1])
+            #     reciprocal_shortest_path = 1. / shortest_path
+            # except nx.NetworkXNoPath:
+            #     reciprocal_shortest_path = 0.
 
             f = [degree_0,
                  degree_1,
@@ -141,12 +145,13 @@ class SimpleClassifier:
                  adamic_adar,
                  page_rank_0,
                  page_rank_1,
-                 reciprocal_shortest_path]
+                 # reciprocal_shortest_path
+                 ]
 
             X.append(f)
 
             i += 1
-            if i%100000 == 0:
+            if i%1000000 == 0:
                 print(i)
 
         return X
@@ -164,33 +169,73 @@ class SimpleClassifier:
         np.save(path + "X_test", self.X_test)
         np.save(path + "Y_train", self.Y_train)
         np.save(path + "Y_test", self.Y_test)
+        np.save(path + "train_edges", self.train_edges)
+
 
 
 class PathEmbeddingClassifier:
-    def __init__(self, G):
-        self.G = G
-        pass
+    def __init__(self, mpg):
+        self.mpg = mpg
 
-    def evaluate(self):
-        pass
+    def train(self, method):
+        if method == "RF":
+            self.clf = RandomForestClassifier(n_estimators=100)
+            self.clf.fit(self.X_train, self.Y_train)
+
+    def predict(self):
+        self.Y_pred = self.clf.predict(self.X_test)
+        return self.Y_pred
+
+    def evaluate(self, metric="AUC"):
+        if metric == "AUC":
+            return roc_auc_score(self.Y_test, self.Y_pred)
+        elif metric == "confussion":
+            return confusion_matrix(self.Y_test, self.Y_pred)
+        else:
+            return("Metric not known!")
+
+    def prepare_train(self, G_train, train_edges):
+        self.X_train = self.create_features(train_edges)
+        self.Y_train = [int(G_train.has_edge(i,j)) for (i,j) in train_edges]
+
+    def prepare_test(self, test_edges, Y_test):
+        self.X_test = self.create_features(test_edges)
+        self.Y_test = Y_test
+
 
     def generate_paths(self, path, out_file):
-        if os.path.isfile(out_file):
-            pass
-        else:
-            #TODO: generate file with paths
-            pass
+        if path == "disease-gene-disease":
+            self.mpg.generate_random_di_g_di(out_file, 100, 100)
+        elif path == "gene-disease-gene":
+            self.mpg.generate_random_g_di_g(out_file, 100, 100)
+        elif path == "drug-gene-drug":
+            self.mpg.generate_random_dr_g_dr(out_file, 100, 100)
 
-    def generate_embeddings(self, out_file=None):
-        if out_file is not None: #os.path.isfile(out_file):
-            pass
-        else:
-            #TODO: generate file with paths
-            call(["./code_metapath2vec/metapath2vec", "-train", "data/exp/output.women.w50.l5.txt", "-output", "data/exp/embed.women.wew.w50.l5",
-                  "-pp", "1", "-size", "32", "-window", "7", "-negative", "5", "-threads", "32"])
-            # ./metapath2vec -train ../in_dbis/dbis.cac.w1000.l100.txt -output ../out_dbis/dbis.cac.w1000.l100 -pp 1 -size 128 -window 7 -negative 5 -threads 32
+    def generate_embeddings(self, walks_file, embed_file):
+        call(["./code_metapath2vec/metapath2vec", "-train", walks_file, "-output", embed_file,
+              "-pp", "1", "-size", "32", "-window", "7", "-negative", "5", "-threads", "32"])
 
-            pass
+        f = open(embed_file + ".txt")
+        f.readline()
+        f.readline()
+        self.embeddings = defaultdict(list)
+        for line in f:
+            toks = line.strip().split(" ")
+            self.embeddings[toks[0]] = np.array([float(n) for n in toks[1:]])
+
+        print(self.embeddings)
+
+
+    def create_features(self, train_edges, edge_function="hadamard"):
+        X = []
+
+        for pair in train_edges:
+            print(pair)
+            print(self.embeddings[pair[0]], self.embeddings[pair[1]])
+            features = edge_functions[edge_function](self.embeddings[pair[0]], self.embeddings[pair[1]])
+            X.append(features)
+
+        return X
 
 
 if __name__ == '__main__':
@@ -205,12 +250,7 @@ if __name__ == '__main__':
 
     print("Created graph")
 
-    # genes = [n for n in G.nodes if n.startswith("gene")]
-    # diseases = [n for n in G.nodes if n.startswith("disease")]
-    # drugs = [n for n in G.nodes if n.startswith("drug")]
-
     edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
-    print(G.number_of_selfloops())
 
     G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
@@ -219,14 +259,30 @@ if __name__ == '__main__':
     for edge_type in edge_types:
         for num in range(5):
             print(num, edge_type)
-            G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type)
-            simple_model = SimpleClassifier(GC, num)
-            simple_model.prepare_train(G_train, train_edges)
-            Y_test = [1 for i in test_positive] + [0 for i in test_negative]
-            simple_model.prepare_test(G_train, test_positive + test_negative, Y_test)
 
-            simple_model.save("data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/")
-            simple_model.train()
+            file_path = "data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
+
+            G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type, num)
+            print("Test train split")
+            simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, file_path)
+
+            simple_model.train("LR", num)
             simple_model.predict()
             print("AUC:", simple_model.evaluate())
             print("confussion:", simple_model.evaluate(metric="confussion"))
+
+
+
+            ### path embedding classifier
+            # mpg = MetaPathGeneratorBio()
+            # mpg.read_data(G_train)
+            # metapath_model = PathEmbeddingClassifier(mpg)
+            # metapath_model.generate_paths("gene-disease-gene", "data/bio/parsed/walks.txt")
+            # metapath_model.generate_embeddings("data/bio/parsed/walks.txt", "data/bio/parsed/embeddings")
+            # metapath_model.prepare_train(G_train, train_edges)
+            # Y_test = [1 for i in test_positive] + [0 for i in test_negative]
+            # metapath_model.prepare_test(test_positive + test_negative, Y_test)
+            # metapath_model.train()
+            # metapath_model.predict()
+            # print("AUC:", metapath_model.evaluate())
+            # print("confussion:", metapath_model.evaluate(metric="confussion"))
