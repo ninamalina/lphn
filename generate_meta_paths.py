@@ -160,6 +160,103 @@ class MetaPathGeneratorBio:
             elif first_type == "gene" and second_type == "gene":
                 self.gene_genes[edge[0]].append(edge[1])
                 self.gene_genes[edge[1]].append(edge[0])
+            elif first_type == "gene" and second_type == "drug":
+                self.drug_genes[edge[1]].append(edge[0])
+                self.gene_drugs[edge[0]].append(edge[1])
+            elif first_type == "gene" and second_type == "disease":
+                self.disease_genes[edge[1]].append(edge[0])
+                self.gene_diseases[edge[0]].append(edge[1])
+
+
+    def generate_walks(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        all_genes = set(self.gene_genes.keys())
+
+
+
+        # gene-gene paths
+        for gene in self.gene_genes:
+            g0 = gene
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    genes = self.gene_genes[gene]
+                    gene = random.sample(genes, 1).pop()
+                    outline += " " + gene
+                outfile.write(outline + "\n")
+
+        # disease-gene-disease paths
+        for disease in self.disease_genes:
+            di0 = disease
+            for j in xrange(0, numwalks):  # num walks
+                outline = di0
+                for i in xrange(0, walklength):
+                    genes = self.disease_genes[disease]
+                    gene = random.sample(genes, 1).pop()
+                    all_genes.add(gene)
+                    outline += " " + gene
+                    diseases = self.gene_diseases[gene]
+                    disease = random.sample(diseases, 1).pop()
+                    outline += " " + disease
+                outfile.write(outline + "\n")
+
+        # drug-gene-drug paths
+        for drug in self.drug_genes:
+            di0 = drug
+            for j in xrange(0, numwalks):  # num walks
+                outline = di0
+                for i in xrange(0, walklength):
+                    genes = self.drug_genes[drug]
+                    gene = random.sample(genes, 1).pop()
+                    all_genes.add(gene)
+                    outline += " " + gene
+                    drugs = self.gene_drugs[gene]
+                    drug = random.sample(drugs, 1).pop()
+                    outline += " " + drug
+                outfile.write(outline + "\n")
+
+
+        for gene in self.gene_diseases:
+            g0 = gene
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    diseases = self.gene_diseases[gene]
+                    disease = random.sample(diseases, 1).pop()
+                    outline += " " + disease
+                    genes = self.disease_genes[disease]
+                    gene = random.sample(genes, 1).pop()
+                    all_genes.add(gene)
+                    outline += " " + gene
+
+                outfile.write(outline + "\n")
+
+        for gene in self.gene_drugs:
+            g0 = gene
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    drugs = self.gene_drugs[gene]
+                    drug = random.sample(drugs, 1).pop()
+                    outline += " " + drug
+                    genes = self.drug_genes[drug]
+                    gene = random.sample(genes, 1).pop()
+                    outline += " " + gene
+
+                outfile.write(outline + "\n")
+
+        print(len(all_genes))
+        all_genes_2 = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
+        print(len(all_genes_2))
+        d = all_genes_2.difference(all_genes)
+
+        print("Elements not used:", d)
+        for g in d:
+            outfile.write(g + "\n")
+
+
+
 
 
     def generate_random_di_g_di(self, outfilename, numwalks, walklength):
@@ -180,6 +277,7 @@ class MetaPathGeneratorBio:
 
     def generate_random_g_di_g(self, outfilename, numwalks, walklength):
         # gene-disease-gene
+        # TODO preverit ce se vse bolezni pojavijo
         outfile = open(outfilename, 'w')
         all_genes = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
         for gene in all_genes:

@@ -40,28 +40,27 @@ def split_test_train(G, edge_type, seed, test_size=0.2):
     m = int(test_size * n_edges)
 
     # TODO: positive sampling such that train_G is still connected
-    # test_positive = set()
-    # bad_edges = set()
-    test_positive = random.sample(G_edge_type.edges, m)
-    test_positive = [(e[1], e[0]) if e[0] > e[1] else e for e in test_positive]
+    test_positive = set()
+    bad_edges = set()
+    # test_positive = random.sample(G_edge_type.edges, m)
+    # test_positive = [(e[1], e[0]) if e[0] > e[1] else e for e in test_positive]
 
 
-    # t0 = time.time()
-    # while len(test_positive) < m:
-    #     i = np.random.randint(low=0, high=len(selected_edges))
-    #     e = selected_edges[i]
-    #     if e not in test_positive:
-    #         G_train.remove_edge(e[0], e[1])
-    #         if e not in bad_edges and nx.is_connected(G_train):
-    #             e = (e[1], e[0]) if e[0] > e[1] else e
-    #             test_positive.add(e)
-    #         else:
-    #             G_train.add_edge(e[0],e[1])
-    #             bad_edges.add(e)
-    #     if len(test_positive)%100 == 0:
-    #         print(time.time() - t0)
-    #         t0 = time.time()
-    #         print(len(test_positive))
+    t0 = time.time()
+    while len(test_positive) < m:
+        i = np.random.randint(low=0, high=len(selected_edges))
+        e = selected_edges[i]
+        if e not in test_positive:
+            G_train.remove_edge(e[0], e[1])
+            if nx.is_connected(G_train):
+                e = (e[1], e[0]) if e[0] > e[1] else e
+                test_positive.add(e)
+            else:
+                G_train.add_edge(e[0],e[1])
+        if len(test_positive)%100 == 0:
+            print(time.time() - t0)
+            t0 = time.time()
+            print(len(test_positive))
 
     test_negative = set()
 
@@ -89,7 +88,8 @@ def split_test_train(G, edge_type, seed, test_size=0.2):
     train_edges = set(train_edges).difference(test_positive).difference(test_negative)
     print("time:", time.time() - t, "| train edges", len(train_edges))
 
-    G_train.remove_edges_from(test_positive)
+    # G_train.remove_edges_from(test_positive)
+    print(nx.is_connected(G_train))
     # TODO: remove "dependencies" in some graphs
 
     return G, G_train, list(test_positive), list(test_negative), list(train_edges)
@@ -228,6 +228,7 @@ class PathEmbeddingClassifier:
 
 
     def train(self, method):
+        print("Training ... ")
         if method == "RF":
             self.clf = RandomForestClassifier(n_estimators=100)
         elif method == "LR":
@@ -235,6 +236,7 @@ class PathEmbeddingClassifier:
         self.clf.fit(self.X_train, self.Y_train)
 
     def predict(self):
+        print("Predicting ...")
         self.Y_pred = self.clf.predict(self.X_test)
         return self.Y_pred
 
@@ -265,13 +267,16 @@ class PathEmbeddingClassifier:
             self.mpg.generate_random_dr_g_dr(out_file, 100, 100)
         elif path == "gene-drug-gene":
             self.mpg.generate_random_dr_g_dr(out_file, 100, 100)
+        else:
+            self.mpg.generate_walks(out_file, 10, 10)
 
     def generate_embeddings(self, walks_file, embed_file, generated):
         if not generated:
             print("Generating embeddings")
             call(["./code_metapath2vec/metapath2vec", "-train", walks_file, "-output", embed_file,
-                  "-pp", "1", "-size", "32", "-window", "7", "-debug", "1", "-negative", "5", "-threads", "32"])
+                  "-pp", "1", "-size", "32", "-window", "7", "-debug", "2", "-negative", "5", "-threads", "32"])
 
+        print("Embeddings generated - reading to array")
         f = open(embed_file + ".txt")
         f.readline()
         f.readline()
@@ -284,12 +289,11 @@ class PathEmbeddingClassifier:
 
 
     def create_features(self, train_edges, edge_function="hadamard"):
+        print("Creating features ... ")
         X = []
 
         for pair in train_edges:
-            print(pair)
-
-            # print(self.embeddings[pair[0]], self.embeddings[pair[1]])
+            # print(pair)
             features = edge_functions[edge_function](self.embeddings[pair[0]], self.embeddings[pair[1]])
             X.append(features)
 
@@ -343,12 +347,14 @@ if __name__ == '__main__':
             print("Meta path classifier")
             mpg = MetaPathGeneratorBio(num)
             mpg.read_data(G_train)
-            if edge_type == ("disease", "gene"):
-                meta_path = "gene-disease-gene"
-            elif edge_type == ("drug", "gene"):
-                meta_path = "gene-drug-gene"
-            elif edge_type == ("gene","gene"):
-                meta_path = "gene-disease-gene"
+            # if edge_type == ("disease", "gene"):
+            #     meta_path = "gene-disease-gene"
+            # elif edge_type == ("drug", "gene"):
+            #     meta_path = "gene-drug-gene"
+            # elif edge_type == ("gene","gene"):
+            #     meta_path = "gene-disease-gene"
+
+            meta_path = "allpaths"
 
             file_path ="data/bio/parsed/embeddings/" + meta_path + "/random" + str(num) + "/"
             metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)
