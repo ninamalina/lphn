@@ -354,9 +354,9 @@ if __name__ == '__main__':
             # elif edge_type == ("gene","gene"):
             #     meta_path = "gene-disease-gene"
 
-            meta_path = "allpaths"
+            meta_path = "disease_gene"
 
-            file_path ="data/bio/parsed/embeddings/" + meta_path + "/random" + str(num) + "/"
+            file_path ="data/bio/parsed/embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
             metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)
 
             metapath_model.train("LR")
