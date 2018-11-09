@@ -27,6 +27,7 @@ def split_test_train(G, edge_type, seed, test_size=0.2):
     nodes_1 = [n for n in G.nodes if n.startswith(edge_type[1])]
 
     selected_edges = [e for e in G.edges if (e[0].startswith(edge_type[0]) and e[1].startswith(edge_type[1]))]
+    selected_edges = [(e[1], e[0]) if e[0] > e[1] else e for e in selected_edges]
 
     G_edge_type = nx.Graph()
     G_edge_type.add_nodes_from(nodes_0 + nodes_1)
@@ -50,10 +51,11 @@ def split_test_train(G, edge_type, seed, test_size=0.2):
     while len(test_positive) < m:
         i = np.random.randint(low=0, high=len(selected_edges))
         e = selected_edges[i]
+        e = (e[1], e[0]) if e[0] > e[1] else e
+
         if e not in test_positive:
             G_train.remove_edge(e[0], e[1])
             if nx.is_connected(G_train):
-                e = (e[1], e[0]) if e[0] > e[1] else e
                 test_positive.add(e)
             else:
                 G_train.add_edge(e[0],e[1])
@@ -319,7 +321,7 @@ if __name__ == '__main__':
 
     print("Created graph")
 
-    edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
+    edge_types = [("gene", "gene"), ("disease", "gene"), ("drug","gene")]
 
     G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
