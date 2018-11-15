@@ -11,6 +11,7 @@ from collections import defaultdict
 from sklearn import linear_model
 from sklearn.ensemble import AdaBoostClassifier
 import os
+from utils import split_test_train
 
 edge_functions = {
     "hadamard": lambda a, b: a * b,
@@ -18,83 +19,6 @@ edge_functions = {
     "l1": lambda a, b: np.abs(a - b),
     "l2": lambda a, b: np.abs(a - b) ** 2,
 }
-
-def split_test_train(G, edge_type, seed, test_size=0.2):
-    random.seed(seed)
-    np.random.seed(seed)
-
-    nodes_0 = [n for n in G.nodes if n.startswith(edge_type[0])]
-    nodes_1 = [n for n in G.nodes if n.startswith(edge_type[1])]
-
-    selected_edges = [e for e in G.edges if (e[0].startswith(edge_type[0]) and e[1].startswith(edge_type[1]))]
-    selected_edges = [(e[1], e[0]) if e[0] > e[1] else e for e in selected_edges]
-
-    G_edge_type = nx.Graph()
-    G_edge_type.add_nodes_from(nodes_0 + nodes_1)
-    G_edge_type.add_edges_from(selected_edges)
-
-    G_train = G.copy()
-    print ("Is connected",  nx.is_connected(G_train))
-
-    n_edges = G_edge_type.number_of_edges()
-    print(len(selected_edges), n_edges)
-    m = int(test_size * n_edges)
-
-    # TODO: positive sampling such that train_G is still connected
-    test_positive = set()
-    bad_edges = set()
-    # test_positive = random.sample(G_edge_type.edges, m)
-    # test_positive = [(e[1], e[0]) if e[0] > e[1] else e for e in test_positive]
-
-
-    t0 = time.time()
-    while len(test_positive) < m:
-        i = np.random.randint(low=0, high=len(selected_edges))
-        e = selected_edges[i]
-        e = (e[1], e[0]) if e[0] > e[1] else e
-
-        if e not in test_positive:
-            G_train.remove_edge(e[0], e[1])
-            if nx.is_connected(G_train):
-                test_positive.add(e)
-            else:
-                G_train.add_edge(e[0],e[1])
-        if len(test_positive)%100 == 0:
-            print(time.time() - t0)
-            t0 = time.time()
-            print(len(test_positive))
-
-    test_negative = set()
-
-    while len(test_negative) < m:
-        i, j = np.random.randint(low=0, high=len(nodes_0)), np.random.randint(low=0, high=len(nodes_1))
-        if nodes_0[i] != nodes_1[j] and not G_edge_type.has_edge(nodes_0[i], nodes_1[j]):
-            e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
-            test_negative.add(e)
-
-    print(len(nodes_0), len(nodes_1))
-
-    t = time.time()
-    train_edges = []
-    if edge_type[0] != edge_type[1]:
-        for n0 in nodes_0:
-            for n1 in nodes_1:
-                e = (n0, n1) if n0 < n1 else (n1, n0)
-                train_edges.append(e)
-    else:
-        for i in range(len(nodes_0)):
-            for j in range(i+1, len(nodes_0)):
-                e = (nodes_0[i], nodes_1[j]) if nodes_0[i] < nodes_1[j] else (nodes_1[j], nodes_0[i])
-                train_edges.append(e)
-
-    train_edges = set(train_edges).difference(test_positive).difference(test_negative)
-    print("time:", time.time() - t, "| train edges", len(train_edges))
-
-    # G_train.remove_edges_from(test_positive)
-    print(nx.is_connected(G_train))
-    # TODO: remove "dependencies" in some graphs
-
-    return G, G_train, list(test_positive), list(test_negative), list(train_edges)
 
 
 class SimpleClassifier:
@@ -309,6 +233,35 @@ class PathEmbeddingClassifier:
         np.save(path + "train_edges", self.train_edges)
 
 
+def read_data(GC, edge_type, num, path=None):
+
+    if path == None:
+        return split_test_train(GC, edge_type, num)
+
+    path_G = path + "G_train.edgelist"
+
+    if os.path.exists(path_G):
+        G_train = nx.read_edgelist(path_G)
+        test_positive = np.load(path + "test_positive.npy")
+        test_negative = np.load(path + "test_negative.npy")
+        val_positive = np.load(path + "val_positive.npy")
+        val_negative = np.load(path + "val_negative.npy")
+        train_edges = np.load(path + "train_edges.npy")
+    else:
+        G_train, test_positive, test_negative, val_positive, val_negative, train_edges = split_test_train(GC, edge_type,
+                                                                                                          num)
+        nx.write_edgelist(G_train, path_G)
+        np.save(path + "val_negative", val_negative)
+        np.save(path + "val_positive", val_positive)
+        np.save(path + "test_negative", test_negative)
+        np.save(path + "test_positive", test_positive)
+        np.save(path + "train_edges", train_edges)
+
+
+    return G_train, test_positive, test_negative, val_positive, val_negative, train_edges
+
+
+
 if __name__ == '__main__':
 
     f = open("data/bio/parsed/bio_edgelist.tsv")
@@ -321,7 +274,7 @@ if __name__ == '__main__':
 
     print("Created graph")
 
-    edge_types = [("gene", "gene"), ("disease", "gene"), ("drug","gene")]
+    edge_types = [("disease", "gene"), ("drug","gene"), ("gene", "gene")]
 
     G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
@@ -330,11 +283,12 @@ if __name__ == '__main__':
         for num in range(1):
 
             print(num, edge_type)
-            G, G_train, test_positive, test_negative, train_edges = split_test_train(GC, edge_type, num)
+            p = "data/bio/parsed/random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
+            G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_data(GC, edge_type, num, p)
+
             print("Test train split")
-
-
-
+            #
+            #
             # print("Simple classifier")
             # file_path = "data/bio/parsed/preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
             # simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, file_path)
@@ -342,26 +296,31 @@ if __name__ == '__main__':
             # simple_model.predict()
             # print("AUC:", simple_model.evaluate())
             # print("confussion:", simple_model.evaluate(metric="confussion"))
-
-
-
-            ### path embedding classifier
-            print("Meta path classifier")
-            mpg = MetaPathGeneratorBio(num)
-            mpg.read_data(G_train)
-            # if edge_type == ("disease", "gene"):
-            #     meta_path = "gene-disease-gene"
-            # elif edge_type == ("drug", "gene"):
-            #     meta_path = "gene-drug-gene"
-            # elif edge_type == ("gene","gene"):
-            #     meta_path = "gene-disease-gene"
-
-            meta_path = "disease_gene"
-
-            file_path ="data/bio/parsed/embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-            metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)
-
-            metapath_model.train("LR")
-            metapath_model.predict()
-            print("AUC:", metapath_model.evaluate())
-            print("confussion:", metapath_model.evaluate(metric="confussion"))
+            #
+            #
+            #
+            # ### path embedding classifier
+            # print("Meta path classifier")
+            # mpg = MetaPathGeneratorBio(num)
+            # mpg.read_data(G_train)
+            # # if edge_type == ("disease", "gene"):
+            # #     meta_path = "gene-disease-gene"
+            # # elif edge_type == ("drug", "gene"):
+            # #     meta_path = "gene-drug-gene"
+            # # elif edge_type == ("gene","gene"):
+            # #     meta_path = "gene-disease-gene"
+            #
+            # meta_path = "disease_gene"
+            #
+            # file_path ="data/bio/parsed/embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
+            # metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)
+            #
+            # metapath_model.train("LR")
+            # metapath_model.predict()
+            # print("AUC:", metapath_model.evaluate())
+            # print("confussion:", metapath_model.evaluate(metric="confussion"))
+            #
+            #
+            # # gcn
+            #
+            # adj_train = nx.to_scipy_sparse_matrix(G_train)
