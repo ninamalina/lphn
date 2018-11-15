@@ -8,7 +8,7 @@ import io
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 # import random
 
 
@@ -92,22 +92,22 @@ def preprocess_dlbp_data(in_files):
             # print(paper_title_dict[paper_id].encode("utf-8")[83])
             f.write(paper_id + "\t" + paper_title_dict[paper_id] + "\n")
 
-def visualize(in_embeddings, out_file):
-    f = open(in_embeddings)
-    f.readline()
-    f.readline()
-    elements = []
-    X = []
-    for line in f:
-        toks = line.strip().split(" ")
-        elements.append(toks[0][0])
-        X.append([float(n) for n in toks[1:]])
-    X = np.array(X)
-    X_embedded = X
-    # X_embedded = TSNE(n_components=2).fit_transform(X)
-    sns.scatterplot(X_embedded[:,0], X_embedded[:,1], hue=elements)
-    plt.tight_layout()
-    plt.savefig(out_file)
+# def visualize(in_embeddings, out_file):
+#     f = open(in_embeddings)
+#     f.readline()
+#     f.readline()
+#     elements = []
+#     X = []
+#     for line in f:
+#         toks = line.strip().split(" ")
+#         elements.append(toks[0][0])
+#         X.append([float(n) for n in toks[1:]])
+#     X = np.array(X)
+#     X_embedded = X
+#     # X_embedded = TSNE(n_components=2).fit_transform(X)
+#     sns.scatterplot(X_embedded[:,0], X_embedded[:,1], hue=elements)
+#     plt.tight_layout()
+#     plt.savefig(out_file)
 
 
 def load_graph_data(file_name):
@@ -213,8 +213,8 @@ def split_test_train(G, edge_type, seed, val_size=0.1, test_size=0.1):
 
 
 
-if __name__ == '__main__':
-    # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
-    # visualize("data/exp/embed.women.wew.w50.l5.txt", "data/exp/women_tsne.pdf")
-    G, A = load_data("data/bio/parsed/bio_edgelist.tsv")
-    print(A.shape)
+# if __name__ == '__main__':
+#     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
+#     # visualize("data/exp/embed.women.wew.w50.l5.txt", "data/exp/women_tsne.pdf")
+#     G, A = load_data("data/bio/parsed/bio_edgelist.tsv")
+#     print(A.shape)
