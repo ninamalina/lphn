@@ -10,6 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import seaborn as sns
 # import random
+import os
+from collections import defaultdict
+import scipy.sparse as sp
 
 
 
@@ -120,11 +123,12 @@ def load_graph_data(file_name):
 
     G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
-    A = nx.adjacency_matrix(GC)
-    return GC, A
+    # A = nx.adjacency_matrix(GC)
+    return GC
 
 
 def split_test_train(G, edge_type, seed, val_size=0.1, test_size=0.1):
+    print(edge_type)
     np.random.seed(seed)
 
     t = time.time()
@@ -212,6 +216,76 @@ def split_test_train(G, edge_type, seed, val_size=0.1, test_size=0.1):
     return G_train, list(test_positive), list(test_negative), list(val_positive), list(val_negative), list(train_edges)
 
 
+def read_split(GC, edge_type, num, path=None):
+
+        if path == None:
+            return split_test_train(GC, edge_type, num)
+
+        path_G = path + "G_train.edgelist"
+
+        if os.path.exists(path_G):
+            G_train = nx.read_edgelist(path_G)
+            test_positive = np.load(path + "test_positive.npy")
+            test_negative = np.load(path + "test_negative.npy")
+            val_positive = np.load(path + "val_positive.npy")
+            val_negative = np.load(path + "val_negative.npy")
+            train_edges = np.load(path + "train_edges.npy")
+        else:
+            G_train, test_positive, test_negative, val_positive, val_negative, train_edges = split_test_train(GC,
+                                                                                                              edge_type,
+                                                                                                              num)
+            nx.write_edgelist(G_train, path_G)
+            np.save(path + "val_negative", val_negative)
+            np.save(path + "val_positive", val_positive)
+            np.save(path + "test_negative", test_negative)
+            np.save(path + "test_positive", test_positive)
+            np.save(path + "train_edges", train_edges)
+
+        return G_train, test_positive, test_negative, val_positive, val_negative, train_edges
+
+def get_edge_adj_matrices(G, edge_types):
+    adj_mats = defaultdict(dict)
+    for edge_type in edge_types:
+        edge_type_0 = edge_type.split("_")[0]
+        edge_type_1 = edge_type.split("_")[1]
+        nodes_0 = [n for n in G.nodes if n.startswith(edge_type_0)]
+        nodes_1 = [n for n in G.nodes if n.startswith(edge_type_1)]
+
+        selected_edges = [e for e in G.edges if (e[0].startswith(edge_type_0) and e[1].startswith(edge_type_1))
+                      or (e[0].startswith(edge_type_1) and e[1].startswith(edge_type_0))]
+        selected_edges = [(e[1], e[0]) if e[0] > e[1] else e for e in selected_edges]
+        G_edge_type = nx.Graph()
+        G_edge_type.add_nodes_from(nodes_0 + nodes_1)
+        G_edge_type.add_edges_from(selected_edges)
+
+        if edge_type_0 == edge_type_1:
+            if edge_types[edge_type] is None:
+                nodes = G_edge_type.nodes()
+            else:
+                nodes = edge_types[edge_type]
+            mat = nx.to_scipy_sparse_matrix(G_edge_type, nodelist=nodes)
+        else:
+            if edge_types[edge_type] is not None:
+                (nodes_0, nodes_1) = edge_types[edge_type]
+            mat = np.zeros((len(nodes_0), len(nodes_1)))
+            for (e0, e1) in selected_edges:
+                in_0 = nodes_0.index(e0)
+                in_1 = nodes_1.index(e1)
+                mat[in_0][in_1] = 1.
+            nodes = (nodes_0, nodes_1)
+
+        # mat = np.array(mat)
+        adj_mats[edge_type]["nodes"] = nodes
+        adj_mats[edge_type]["adj"] = sp.csr_matrix(mat)
+
+    return adj_mats
+
+
+def check_desc(arr):
+    if len(arr) != 3:
+        return False
+    else:
+        return arr[0] > arr[1] > arr[2]
 
 # if __name__ == '__main__':
 #     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])

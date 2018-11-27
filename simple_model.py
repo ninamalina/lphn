@@ -7,7 +7,7 @@ from sklearn import linear_model
 from sklearn.ensemble import AdaBoostClassifier
 import os
 import sys
-from models import read_data
+from utils import read_split
 
 
 class SimpleClassifier:
@@ -24,6 +24,8 @@ class SimpleClassifier:
                 self.Y_train = np.load(path + "Y_train.npy")
                 self.X_test = np.load(path + "X_test.npy")
                 self.Y_test = np.load(path + "Y_test.npy")
+            else:
+                print("Something is wrong ... ")
         else:
             print("Preparing data")
             self.prepare_train(G_train, train_edges)
@@ -46,13 +48,17 @@ class SimpleClassifier:
 
         self.clf.fit(self.X_train, self.Y_train)
 
-    def predict(self):
-        self.Y_pred = self.clf.predict(self.X_test)
+    def predict(self, prob=False):
+        if prob:
+            self.Y_pred = self.clf.predict_proba(self.X_test)[:,1]
+            print(self.Y_pred)
+        else:
+            self.Y_pred = self.clf.predict(self.X_test)
         return self.Y_pred
 
     def evaluate(self, metric="AUC"):
         if metric == "AUC":
-            return roc_auc_score(self.Y_test, np.round(self.Y_pred))
+            return roc_auc_score(self.Y_test, self.Y_pred)
         elif metric == "confussion":
             return confusion_matrix(self.Y_test, np.round(self.Y_pred))
         else:
@@ -125,11 +131,13 @@ if __name__ == '__main__':
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
 
     p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_data(GC, edge_type, num, p)
+    G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
 
     p = path + "preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
     simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, p)
     simple_model.train("LR", num)
     simple_model.predict()
+    print("Acc:", simple_model.evaluate())
+    simple_model.predict(prob=True)
     print("AUC:", simple_model.evaluate())
     print("confussion:", simple_model.evaluate(metric="confussion"))

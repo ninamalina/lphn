@@ -111,6 +111,6 @@ class GCNModelVAE(Model):
 
         self.z = self.z_mean + tf.random_normal([self.n_samples, FLAGS.hidden2]) * tf.exp(self.z_log_std)
 
-        self.reconstructions = DistMultDecoder(input_dim=FLAGS.hidden2,
+        self.reconstructions = InnerProductDecoder(input_dim=FLAGS.hidden2,
                                       act=lambda x: x,
                                       logging=self.logging)(self.z)

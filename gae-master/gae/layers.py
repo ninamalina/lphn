@@ -119,6 +119,7 @@ class InnerProductDecoder(Layer):
         outputs = self.act(x)
         return outputs
 
+
 class DistMultDecoder(Layer):
     """DistMult Decoder model layer for link prediction."""
     def __init__(self, input_dim, dropout=0., act=tf.nn.sigmoid, **kwargs):

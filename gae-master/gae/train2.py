@@ -19,77 +19,61 @@ from input_data import load_data
 from model import GCNModelAE, GCNModelVAE
 from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
 import networkx as nx
-
-
-
-def read_data(path):
-    G_train = nx.read_edgelist(path + "G_train.edgelist")
-    test_positive = np.load(path + "test_positive.npy")
-    test_negative = np.load(path + "test_negative.npy")
-    val_positive = np.load(path + "val_positive.npy")
-    val_negative = np.load(path + "val_negative.npy")
-    train_edges = np.load(path + "train_edges.npy")
-
-    return G_train, test_positive, test_negative, val_positive, val_negative, train_edges
-
+from utils import read_split, load_graph_data, check_desc
 
 
 # Settings
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 100, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 10, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0., 'Weight for L2 loss on embedding matrix.')
 flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
 
 flags.DEFINE_string('model', 'gcn_ae', 'Model string.')
-flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
+flags.DEFINE_string('dataset', 'bio', 'Dataset string.')
+flags.DEFINE_string('edge_type', 'drug_gene', 'Type of edges to learn.')
+flags.DEFINE_integer('random_seed', 0, 'Random seed')
 flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
+
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
+dataset_path = "../../data/" + dataset_str + "/parsed/"
+random_seed = FLAGS.random_seed
+graph_path = dataset_path + dataset_str + "_edgelist.tsv"
+edge_type = FLAGS.edge_type
+
 
 # Load data
 # adj, features = load_data(dataset_str)
-
+G = load_graph_data(graph_path)
 
 
 # Store original adjacency matrix (without diagonal entries) for later
-# adj_orig = adj
-# adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
-# adj_orig.eliminate_zeros()
+nodes = list(G.nodes())
+print(len(nodes))
+adj_orig = nx.to_scipy_sparse_matrix(G, nodelist=nodes)
+adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
+adj_orig.eliminate_zeros()
+
 #
 # adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
 # adj = adj_train
 
-path = "../../data/bio/parsed/"
-graph_path = "../../data/bio/parsed/bio_edgelist.tsv"
-edge_type = ("disease", "gene")
-num = 0
-
-f = open(graph_path)
-G = nx.Graph()
-
-for line in f:
-    a, b = line.strip().split("\t")
-    G.add_edge(a, b)
-
-G.remove_edges_from(G.selfloop_edges())
-GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
-
-adj_orig = nx.to_scipy_sparse_matrix(GC)
-adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
-adj_orig.eliminate_zeros()
+p = dataset_path + "random_splits/" + edge_type + "/random" + str(random_seed) + "/"
+print(p)
+G_train, test_positive_e, test_negative_e, val_positive_e, val_negative_e, train_edges = read_split(G, edge_type.split("_"), random_seed, p)
+print(len(test_negative_e))
+print(len(test_positive_e))
+print(len(val_positive_e))
+print(len(val_negative_e))
 
 
-p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-G_train, test_positive_e, test_negative_e, val_positive_e, val_negative_e, train_edges = read_data(p)
-
-adj_train = nx.to_scipy_sparse_matrix(G_train)
+adj_train = nx.to_scipy_sparse_matrix(G_train, nodelist=nodes)
 adj = adj_train
-nodes = list(G_train.nodes())
 val_positive = [(nodes.index(e1), nodes.index(e2)) for (e1, e2) in val_positive_e]
 val_negative = [(nodes.index(e1), nodes.index(e2)) for (e1, e2) in val_negative_e]
 test_positive = [(nodes.index(e1), nodes.index(e2)) for (e1, e2) in test_positive_e]
@@ -177,9 +161,9 @@ def get_roc_score(edges_pos, edges_neg, emb=None):
     preds_all = np.hstack([preds, preds_neg])
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
     roc_score = roc_auc_score(labels_all, preds_all)
-    ap_score = average_precision_score(labels_all, preds_all)
-
-    return roc_score, ap_score
+    # ap_score = average_precision_score(labels_all, preds_all)
+    acc = roc_auc_score(labels_all, np.round(preds_all))
+    return roc_score, acc
 
 
 cost_val = []
@@ -211,8 +195,11 @@ for epoch in range(FLAGS.epochs):
           "val_ap=", "{:.5f}".format(ap_curr),
           "time=", "{:.5f}".format(time.time() - t))
 
+    if check_desc(val_roc_score[-3:]): # stop learning if roc dropping
+        break
+
 print("Optimization Finished!")
 
-roc_score, ap_score = get_roc_score(test_positive, test_negative)
+roc_score, acc_score = get_roc_score(test_positive, test_negative)
 print('Test ROC score: ' + str(roc_score))
-print('Test AP score: ' + str(ap_score))
+print('Test ACC score: ' + str(acc_score))
