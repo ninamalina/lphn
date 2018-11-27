@@ -14,10 +14,10 @@ import scipy.sparse as sp
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
 
-from optimizer import OptimizerAE, OptimizerVAE
-from input_data import load_data
-from model import GCNModelAE, GCNModelVAE
-from preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
+from gae.optimizer import OptimizerAE, OptimizerVAE
+from gae.input_data import load_data
+from gae.model import GCNModelAE, GCNModelVAE
+from gae.preprocessing import preprocess_graph, construct_feed_dict, sparse_to_tuple, mask_test_edges
 import networkx as nx
 import sys
 sys.path.insert(0, "..../lpnh")
@@ -30,7 +30,7 @@ from utils import read_split, load_graph_data, check_desc
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 10, 'Number of epochs to train.')
+flags.DEFINE_integer('epochs', 100, 'Number of epochs to train.')
 flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
 flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
 flags.DEFINE_float('weight_decay', 0., 'Weight for L2 loss on embedding matrix.')
@@ -45,7 +45,7 @@ flags.DEFINE_integer('features', 0, 'Whether to use features (1) or not (0).')
 
 model_str = FLAGS.model
 dataset_str = FLAGS.dataset
-dataset_path = "../../data/" + dataset_str + "/parsed/"
+dataset_path = "data/" + dataset_str + "/parsed/"
 random_seed = FLAGS.random_seed
 graph_path = dataset_path + dataset_str + "_edgelist.tsv"
 edge_type = FLAGS.edge_type
