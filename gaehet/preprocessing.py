@@ -20,12 +20,16 @@ def preprocess_graph(adj):
     return sparse_to_tuple(adj_normalized)
 
 
-def construct_feed_dict(adj_normalized, adj, features, placeholders):
+def construct_feed_dict(adj_normalized, adj, features, placeholders, edge_type_idx, idx2edge_type):
     # construct feed dictionary
     feed_dict = dict()
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})
+    feed_dict.update({placeholders['edge_type_idx']: edge_type_idx})
+    feed_dict.update({placeholders['row_edge_type']: idx2edge_type[edge_type_idx][0]})
+    feed_dict.update({placeholders['col_edge_type']: idx2edge_type[edge_type_idx][1]})
+
     return feed_dict
 
 

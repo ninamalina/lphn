@@ -12,9 +12,10 @@ from utils import read_split
 
 class SimpleClassifier:
 
-    def __init__(self, G_train, train_edges, test_positive, test_negative, path):
+    def __init__(self, G_train, train_edges, test_positive, test_negative, path, feat_id):
         self.train_edges = train_edges
         self.test_edges = np.concatenate((test_positive, test_negative), axis=0)
+        self.feat_id = feat_id
 
         if os.path.exists(path + "train_edges.npy") :
             print ("Reading files")
@@ -78,15 +79,23 @@ class SimpleClassifier:
             page_rank_0 = page_rank[pair[0]]
             page_rank_1 = page_rank[pair[1]]
 
-            f = [degree_0,
-                 degree_1,
-                 prod,
-                 commmon_neighbors,
-                 jaccard_coefficient,
-                 adamic_adar,
-                 page_rank_0,
-                 page_rank_1,
-                 ]
+            if self.feat_id == 0:
+                f = [degree_0,
+                     degree_1,
+                     prod,
+                     commmon_neighbors,
+                     jaccard_coefficient,
+                     adamic_adar,
+                     page_rank_0,
+                     page_rank_1,
+                     ]
+            elif self.feat_id == 1:
+                f = [degree_0,
+                     degree_1,
+                     prod,
+                     page_rank_0,
+                     page_rank_1,
+                     ]
 
             X.append(f)
 
@@ -119,6 +128,7 @@ if __name__ == '__main__':
     graph_path = sys.argv[2] # "data/bio/parsed/bio_edgelist.tsv"
     edge_type = sys.argv[3].split("_") # disease_gene
     num = int(sys.argv[4]) # 0
+    feat_id = int(sys.argv[5])
 
     f = open(graph_path)
     G = nx.Graph()
@@ -133,8 +143,8 @@ if __name__ == '__main__':
     p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
     G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
 
-    p = path + "preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, p)
+    p = path + "preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/" + str(feat_id) + "/"
+    simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, p, feat_id)
     simple_model.train("LR", num)
     simple_model.predict()
     print("Acc:", simple_model.evaluate())
