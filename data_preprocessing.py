@@ -140,8 +140,8 @@ def build_edgelist(in_files, dataset):
                     splited = line.strip().split("\t")
                     out_file.write(first + "_" + splited[0] + "\t" + second + "_" + splited[1] + "\n")
                     
-                    
-    
+
+
 if __name__ == '__main__':
 
     # preprocess dblp data

@@ -184,19 +184,140 @@ def gather_cols(params, indices, name=None):
 
 
 class OptimizerAE(object):
-    def __init__(self, preds, labels, pos_weight, norm):
-        preds_sub = preds
-        labels_sub = labels
+    # def __init__(self, preds, labels, placeholders, edge_types, adj_mats, reconstructions, norms, pos_weights, edge_type ):
+    def __init__(self, preds, labels, norm, pos_weight):
+        # self.embeddings = embeddings
 
-        self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
+        # print(adj_mats)
+        # print(reconstructions)
+        #
+        # print([adj_mats[et] for et in edge_types])
+        # self.adj_mats = [adj_mats[et] for et in edge_types]
+
+        # self.i = 1 #placeholders['current_i']
+        # self.j = 2 #placeholders['current_j']
+        #
+        #
+        # #
+        # self.et = (1, 2)
+
+        # print(et)
+        # print(preds)
+        # print(labels)
+        # labels_sub = tf.sparse_tensor_to_dense(placeholders['adj_mats_%s,%s' % (self.i, self.j)], validate_indices=False)
+        # preds_sub = preds[self.et]
+        # norm = placeholders['norm_%s,%s' % (self.i, self.j)]
+        # pos_weight = placeholders['pos_weight_%s,%s' % (self.i, self.j)]
+
+
+
+
+        # neg_samples = tf.gather(neg_samples_list, ind[et])
+
+        # preds_sub = tf.sparse_tensor_to_dense(placeholders['current_preds'], validate_indices=False)
+        # labels_sub = tf.sparse_tensor_to_dense(placeholders['current_labels'], validate_indices=False)
+        # labels_sub = placeholders['current_labels']
+        # norm = placeholders['current_norm']
+        # pos_weight = placeholders['current_pos_weight']
+
+        # self.current_i = placeholders['current_i']
+        # self.current_j = placeholders['current_j']
+        # self.embeddings = embeddings
+        # self.edge_types = edge_types
+        # self.edge_type_idx = placeholders['edge_type_idx']
+        # print(self.edge_type_idx)
+        # self.edge_type2dim = edge_type2dim
+        # self.obj_type2n = {i: self.edge_type2dim[i, j][0] for i, j in self.edge_types}
+        # print("objtype2n", self.obj_type2n)
+        # obj_type_n = [self.obj_type2n[i] for i in range(len(self.embeddings))]
+        # print("obj_typw_n", obj_type_n)
+        # self.obj_type_lookup_start = tf.cumsum([0] + obj_type_n[:-1])
+        # print(self.obj_type_lookup_start)
+        # self.obj_type_lookup_end = tf.cumsum(obj_type_n)
+        # print(self.obj_type_lookup_end)
+        #
+        # self.predict()
+
+        # self.labels = adj_mats[self.edge_type_idx]
+        # dict = {'a': 10, 'b': 20}
+        # print(adj_mats)
+        # print(adj_mats.values())
+        # data = tf.stack(adj_mats.values())
+        # print(data)
+
+        # table = tf.contrib.lookup.HashTable(
+        #     tf.contrib.lookup.KeyValueTensorInitializer(keys, adj_mats.values()), -1
+        # )
+        # out = table.lookup(input_tensor)
+        #
+        # print(tf.convert_to_tensor(adj_mats.values()))
+        # data = tf.convert_to_tensor(adj_mats.values())
+        # key = tf.placeholder(tf.int32, shape=None)
+        # result = tf.gather(data, self.edge_type_idx)
+
+        # table = tf.contrib.lookup.HashTable(
+        #     tf.contrib.lookup.KeyValueTensorInitializer(adj_mats.keys(), adj_mats.values()), -1
+        # )
+        # print(table)
+        # out = table.lookup(self.edge_type_idx)
+        # print(adj_mats.values())
+        # data = (adj_mats.values())
+
+        # key = tf.placeholder(tf.int32, shape=None)
+        # print(data[self.edge_type_idx])
+        # self.labels = tf.gather(data, self.edge_type_idx)
+        # sess = tf.InteractiveSession()
+        # sess.run(result, {key: [0, 1, 0]})
+
+        # print("labels", self.labels)
+        # print("preds", self.predictions)
+
+        losses = []
+
+        # labels = adj_mats[edge_type]
+        # predictions = reconstructions[edge_type]
+        labels = tf.sparse_tensor_to_dense(labels, validate_indices=False)
+        loss = norm * tf.nn.weighted_cross_entropy_with_logits(targets=labels,  logits=preds, pos_weight=pos_weight)
+
+        # losses = tf.reshape(tf.concat(1, losses), [-1, seq_len])
+        # print(losses)
+        # losses = tf.concat(losses, 0)
+        # print(losses)
+        self.cost = tf.reduce_mean(loss)
+
+        # self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.predictions))
+        # self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
 
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
-        self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds_sub), 0.5), tf.int32),
-                                           tf.cast(labels_sub, tf.int32))
-        self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
+        # self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds_sub), 0.5), tf.int32),
+        #                                    tf.cast(labels_sub, tf.int32))
+        # self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
+
+
+
+    # def predict(self):
+    #     concatenated = tf.concat(self.embeddings, 0)
+    #
+    #     ind_start = tf.gather(self.obj_type_lookup_start, self.current_i)
+    #     ind_end = tf.gather(self.obj_type_lookup_end, self.current_i)
+    #     indices = tf.range(ind_start, ind_end)
+    #     row_embeds = tf.gather(concatenated, indices)
+    #
+    #     ind_start = tf.gather(self.obj_type_lookup_start, self.current_j)
+    #     ind_end = tf.gather(self.obj_type_lookup_end, self.current_j)
+    #     indices = tf.range(ind_start, ind_end)
+    #     col_embeds = tf.gather(concatenated, indices)
+    #
+    #     # latent_inter = tf.gather(self.latent_inters, self.batch_edge_type_idx)
+    #     # latent_var = tf.gather(self.latent_varies, self.batch_edge_type_idx)
+    #
+    #     # product1 = tf.matmul(row_embeds, latent_var)
+    #     # product2 = tf.matmul(product1, latent_inter)
+    #     # product3 = tf.matmul(product2, latent_var)
+    #     self.predictions = tf.matmul(row_embeds, tf.transpose(col_embeds))
 
 
 class OptimizerVAE(object):

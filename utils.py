@@ -282,10 +282,14 @@ def get_edge_adj_matrices(G, edge_types):
 
 
 def check_desc(arr):
-    if len(arr) != 3:
+    if len(arr) < 3:
         return False
-    else:
-        return arr[0] > arr[1] > arr[2]
+
+    for i in range(len(arr)-1):
+        if arr[i] < arr[i+1]:
+            return False
+    return True
+
 
 # if __name__ == '__main__':
 #     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])

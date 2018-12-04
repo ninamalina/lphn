@@ -10,27 +10,67 @@ def sparse_to_tuple(sparse_mx):
     shape = sparse_mx.shape
     return coords, values, shape
 
+#
+# def preprocess_graph(adj):
+#
+#     adj = sp.coo_matrix(adj)
+#     print(adj.shape)
+#     adj_ = adj + sp.eye(adj.shape[0])
+#     rowsum = np.array(adj_.sum(1))
+#     degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+#     adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
+#     return sparse_to_tuple(adj_normalized)
+
+# # adj_normalized - adj_train normalized
+# # adj - adj_train + diagonala
+# def construct_feed_dict(adj_normalized, adj, features, placeholders, edge_type_idx, idx2edge_type):
+#     # construct feed dictionary
+#     feed_dict = dict()
+#     feed_dict.update({placeholders['features']: features})
+#     # feed_dict.update({placeholders['adj']: adj_normalized})
+#     # feed_dict.update({placeholders['adj_orig']: adj})
+#     # feed_dict.update({placeholders['edge_type_idx']: edge_type_idx})
+#     # feed_dict.update({placeholders['row_edge_type']: idx2edge_type[edge_type_idx][0]})
+#     # feed_dict.update({placeholders['col_edge_type']: idx2edge_type[edge_type_idx][1]})
+
+# def construct_feed_dict(adj_normalized, adj, et, features, placeholders):
+def construct_feed_dict(adjs_train, adjs_train_normalized, features, edge_types, placeholders):
+    # construct feed dictionary
+    feed_dict = dict()
+    # feed_dict.update({placeholders['features']: features})
+    feed_dict.update({placeholders['adj_mats_%d,%d' % (i, j)]: adjs_train_normalized[i, j] for i, j in edge_types})
+    # feed_dict.update({placeholders['norm_%d,%d' % (i, j)]: norms[i, j] for i, j in edge_types})
+    # feed_dict.update({placeholders['pos_weight_%d,%d' % (i, j)]: pos_weights[i, j] for i, j in edge_types})
+    # feed_dict.update({placeholders['current_i']: et[0]})
+    # feed_dict.update({placeholders['current_j']: et[1]})
+    # feed_dict.update({placeholders['edge_type_idx']: et_idx})
+    feed_dict.update({placeholders['feat_%d' % i]: features[i] for i in features})
+
+    # for e in feed_dict:
+    #     print(feed_dict[e])
+
+    # feed_dict.update({placeholders['current_norm']: norms[et[0], et[1]]})
+    # feed_dict.update({placeholders['current_pos_weight']: pos_weights[et[0], et[1]]})
+    # feed_dict.update({placeholders['current_labels']: adjs_train[et[0], et[1]]})
+    # feed_dict.update({placeholders['current_preds']: adjs_train[et[0], et[1]]})
+
+    return feed_dict
+
 
 def preprocess_graph(adj):
     adj = sp.coo_matrix(adj)
-    adj_ = adj + sp.eye(adj.shape[0])
-    rowsum = np.array(adj_.sum(1))
-    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
-    adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
+    if adj.shape[0] == adj.shape[1]:
+        adj_ = adj + sp.eye(adj.shape[0])
+        rowsum = np.array(adj_.sum(1))
+        degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+        adj_normalized = adj_.dot(degree_mat_inv_sqrt).transpose().dot(degree_mat_inv_sqrt).tocoo()
+    else:
+        rowsum = np.array(adj.sum(1))
+        colsum = np.array(adj.sum(0))
+        rowdegree_mat_inv = sp.diags(np.nan_to_num(np.power(rowsum, -0.5)).flatten())
+        coldegree_mat_inv = sp.diags(np.nan_to_num(np.power(colsum, -0.5)).flatten())
+        adj_normalized = rowdegree_mat_inv.dot(adj).dot(coldegree_mat_inv).tocoo()
     return sparse_to_tuple(adj_normalized)
-
-
-def construct_feed_dict(adj_normalized, adj, features, placeholders, edge_type_idx, idx2edge_type):
-    # construct feed dictionary
-    feed_dict = dict()
-    feed_dict.update({placeholders['features']: features})
-    feed_dict.update({placeholders['adj']: adj_normalized})
-    feed_dict.update({placeholders['adj_orig']: adj})
-    feed_dict.update({placeholders['edge_type_idx']: edge_type_idx})
-    feed_dict.update({placeholders['row_edge_type']: idx2edge_type[edge_type_idx][0]})
-    feed_dict.update({placeholders['col_edge_type']: idx2edge_type[edge_type_idx][1]})
-
-    return feed_dict
 
 
 def mask_test_edges(adj):
