@@ -370,15 +370,15 @@ for epoch in range(FLAGS.epochs):
           "time=", "{:.5f}".format(time.time() - t))
 
         val_roc_score.append(roc_curr)
-        # if len(val_roc_score) > 100 and check_desc(val_roc_score[-5:]):  # stop learning if roc dropping
-        #     break
-        if roc_curr > 0.97:
+        if len(val_roc_score) > 100 and check_desc(val_roc_score[-4:]):  # stop learning if roc dropping
             break
+        # if roc_curr > 0.97:
+        #     break
 
-    # if len(val_roc_score) > 100 and check_desc(val_roc_score[-5:]): # stop learning if roc dropping
-    #     break
-    if roc_curr > 0.97:
+    if len(val_roc_score) > 100 and check_desc(val_roc_score[-4:]): # stop learning if roc dropping
         break
+    # if roc_curr > 0.97:
+    #     break
 
 print("Optimization Finished!")
 
