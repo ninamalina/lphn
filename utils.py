@@ -260,10 +260,11 @@ def get_edge_adj_matrices(G, edge_types):
 
         if edge_type_0 == edge_type_1:
             if edge_types[edge_type] is None:
-                nodes = G_edge_type.nodes()
+                nodes = (G_edge_type.nodes(), G_edge_type.nodes())
             else:
                 nodes = edge_types[edge_type]
-            mat = nx.to_scipy_sparse_matrix(G_edge_type, nodelist=nodes)
+            mat = nx.to_scipy_sparse_matrix(G_edge_type, nodelist=nodes[0])
+
         else:
             if edge_types[edge_type] is not None:
                 (nodes_0, nodes_1) = edge_types[edge_type]

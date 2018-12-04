@@ -46,7 +46,6 @@ class GCNModelAEHet(Model):
     def __init__(self, placeholders, num_features, features_nonzero, edge_types, decoders, **kwargs):
         super(GCNModelAEHet, self).__init__(**kwargs)
         self.edge_types = edge_types
-        print (edge_types)
         self.num_edge_types = len(edge_types)
         self.num_obj_types = max([i for i, _ in self.edge_types]) + 1
         self.decoders = decoders
@@ -62,8 +61,6 @@ class GCNModelAEHet(Model):
     def _build(self):
         self.hidden1 = defaultdict(list)
         for i, j in self.edge_types:
-            print(i, j)
-
             self.hidden1[i].append(GraphConvolutionSparseMulti(
                 input_dim=self.input_dim, output_dim=FLAGS.hidden1,
                 edge_type=(i, j),
@@ -85,7 +82,6 @@ class GCNModelAEHet(Model):
 
         self.embeddings = [None] * self.num_obj_types
         for i, embeds in self.embeddings_reltyp.items():
-            print(i)
             # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
             self.embeddings[i] = tf.add_n(embeds)
 
