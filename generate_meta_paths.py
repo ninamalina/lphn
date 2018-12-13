@@ -4,103 +4,35 @@ import random
 from collections import Counter
 from collections import defaultdict
 
-class MetaPathGenerator:
-    def __init__(self):
-        self.id_author = dict()
-        self.id_conf = dict()
-        self.author_coauthorlist = dict()
-        self.conf_authorlist = dict()
-        self.author_conflist = dict()
-        self.paper_author = dict()
-        self.author_paper = dict()
-        self.conf_paper = dict()
-        self.paper_conf = dict()
+class MetaPathGeneratorSicris:
+    def __init__(self, seed):
+        self.field_authors = dict()
+        self.author_fields = dict()
+        self.paper_authors = dict()
+        self.author_papers = dict()
+        random.seed(seed)
 
-    def read_data(self, dirpath):
-        with open(dirpath + "/index_author.tsv") as adictfile:
-            for line in adictfile:
-                toks = line.strip().split("\t")
-                if len(toks) == 2:
-                    self.id_author[toks[0]] = toks[1].replace(" ", "")
+    def read_data(self, G):
+        for edge in G.edges():
+            first_type = edge[0].split("_")[0]
+            second_type = edge[1].split("_")[0]
+            if first_type == "author" and second_type == "field":
+                self.author_fields[edge[0]].append(edge[1])
+                self.field_authors[edge[1]].append(edge[0])
+            elif first_type == "field" and second_type == "author":
+                self.author_fields[edge[1]].append(edge[0])
+                self.field_authors[edge[0]].append(edge[1])
+            elif first_type == "author" and second_type == "paper":
+                self.paper_authors[edge[1]].append(edge[0])
+                self.author_papers[edge[0]].append(edge[1])
+            elif first_type == "paper" and second_type == "author":
+                self.paper_authors[edge[0]].append(edge[1])
+                self.author_papers[edge[1]].append(edge[0])
 
-        #print "#authors", len(self.id_author)
-
-        with open(dirpath + "/index_venue.tsv") as cdictfile:
-            for line in cdictfile:
-                toks = line.strip().split("\t")
-                if len(toks) == 2:
-                    newconf = toks[1].replace(" ", "")
-                    self.id_conf[toks[0]] = newconf
-
-        #print "#conf", len(self.id_conf)
-
-        with open(dirpath + "/author_paper.tsv") as pafile:
-            for line in pafile:
-                toks = line.strip().split("\t")
-                if len(toks) == 2:
-                    a, p = toks[0], toks[1]
-                    if p not in self.paper_author:
-                        self.paper_author[p] = []
-                    self.paper_author[p].append(a)
-                    if a not in self.author_paper:
-                        self.author_paper[a] = []
-                    self.author_paper[a].append(p)
-
-        with open(dirpath + "/paper_venue.tsv") as pcfile:
-            for line in pcfile:
-                toks = line.strip().split("\t")
-                if len(toks) == 2:
-                    p, c = toks[0], toks[1]
-                    self.paper_conf[p] = c 
-                    if c not in self.conf_paper:
-                        self.conf_paper[c] = []
-                    self.conf_paper[c].append(p)
-
-        sumpapersconf, sumauthorsconf = 0, 0
-        conf_authors = dict()
-        for conf in self.conf_paper:
-            papers = self.conf_paper[conf]
-            sumpapersconf += len(papers)
-            for paper in papers:
-                if paper in self.paper_author:
-                    authors = self.paper_author[paper]
-                    sumauthorsconf += len(authors)
-
-        print "#confs  ", len(self.conf_paper)
-        print "#papers ", sumpapersconf,  "#papers per conf ", sumpapersconf / len(self.conf_paper)
-        print "#authors", sumauthorsconf, "#authors per conf", sumauthorsconf / len(self.conf_paper)
+    # def generate_walks(selfoutfilename, numwalks, walklength):
 
 
-    def generate_random_aca(self, outfilename, numwalks, walklength):
-        for conf in self.conf_paper:
-            self.conf_authorlist[conf] = []
-            for paper in self.conf_paper[conf]:
-                if paper not in self.paper_author: continue
-                for author in self.paper_author[paper]:
-                    self.conf_authorlist[conf].append(author)
-                    if author not in self.author_conflist:
-                        self.author_conflist[author] = []
-                    self.author_conflist[author].append(conf)
-        #print "author-conf list done"
 
-        outfile = open(dirpath + "/" + outfilename, 'w')
-        for conf in self.conf_authorlist:
-            conf0 = conf
-            for j in xrange(0, numwalks ): #wnum walks
-                outline = self.id_conf[conf0]
-                for i in xrange(0, walklength):
-                    authors = self.conf_authorlist[conf]
-                    numa = len(authors)
-                    authorid = random.randrange(numa)
-                    author = authors[authorid]
-                    outline += " " + self.id_author[author]
-                    confs = self.author_conflist[author]
-                    numc = len(confs)
-                    confid = random.randrange(numc)
-                    conf = confs[confid]
-                    outline += " " + self.id_conf[conf]
-                outfile.write(outline + "\n")
-        outfile.close()
 
 class MetaPathGeneratorWomen:
     def __init__(self):
@@ -172,8 +104,6 @@ class MetaPathGeneratorBio:
         outfile = open(outfilename, 'w')
 
         all_genes = set(self.gene_genes.keys())
-
-
 
         # gene-gene paths
         for gene in self.gene_genes:
@@ -255,7 +185,101 @@ class MetaPathGeneratorBio:
         for g in d:
             outfile.write(g + "\n")
 
+    def generate_walks_2(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
 
+        all_genes = set(self.gene_genes.keys() + self.gene_diseases.keys() + self.gene_drugs.keys())
+        # gene - disease - gene - drug - gene
+        for gene in all_genes:
+            g0 = gene
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    diseases = self.gene_diseases[gene]
+                    if diseases:
+                        disease = random.sample(diseases, 1).pop()
+                        outline += " " + disease
+                        genes = self.disease_genes[disease]
+                        gene = random.sample(genes, 1).pop()
+                        outline += " " + gene
+                        drugs = self.gene_drugs[gene]
+                        if drugs:
+                            drug = random.sample(drugs, 1).pop()
+                            outline += " " + drug
+                            genes = self.drug_genes[drug]
+                            gene = random.sample(genes, 1).pop()
+                            outline += " " + gene
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+
+        # for gene in self.gene_genes:
+        #     g0 = gene
+        #     for j in xrange(0, numwalks):  # num walks
+        #         outline = g0
+        #         for i in xrange(0, walklength):
+        #             genes = self.gene_genes[gene]
+        #             gene = random.sample(genes, 1).pop()
+        #             outline += " " + gene
+        #         outfile.write(outline + "\n")
+
+        # drug - gene - disease - gene - drug
+        for drug in self.drug_genes:
+            di0 = drug
+            for j in xrange(0, numwalks):  # num walks
+                outline = di0
+                for i in xrange(0, walklength):
+                    genes = self.drug_genes[drug]
+                    gene = random.sample(genes, 1).pop()
+                    outline += " " + gene
+                    diseases = self.gene_diseases[gene]
+                    if diseases:
+                        disease = random.sample(diseases, 1).pop()
+                        outline += " " + disease
+                        genes = self.disease_genes[disease]
+                        gene = random.sample(genes, 1).pop()
+                        outline += " " + gene
+                        drugs = self.gene_drugs[gene]
+                        if drugs:
+                            drug = random.sample(drugs, 1).pop()
+                            outline += " " + drug
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+
+        # disease - gene - drug - gene - disease
+        for disease in self.disease_genes:
+            di0 = disease
+            for j in xrange(0, numwalks):  # num walks
+                outline = di0
+                for i in xrange(0, walklength):
+                    genes = self.disease_genes[disease]
+                    gene = random.sample(genes, 1).pop()
+                    outline += " " + gene
+                    drugs = self.gene_drugs[gene]
+                    if drugs:
+
+                        drug = random.sample(drugs, 1).pop()
+                        outline += " " + drug
+                        genes = self.drug_genes[drug]
+                        gene = random.sample(genes, 1).pop()
+                        outline += " " + gene
+                        diseases = self.gene_diseases[gene]
+                        if diseases:
+                            disease = random.sample(diseases, 1).pop()
+                            outline += " " + disease
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
 
 
 

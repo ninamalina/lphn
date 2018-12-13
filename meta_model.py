@@ -4,7 +4,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn import linear_model
-from sklearn.ensemble import AdaBoostClassifier
 import os
 import sys
 from utils import read_split
@@ -13,12 +12,12 @@ from subprocess import call
 from collections import defaultdict
 
 
-edge_functions = {
-    "hadamard": lambda a, b: a * b,
-    "average": lambda a, b: 0.5 * (a + b),
-    "l1": lambda a, b: np.abs(a - b),
-    "l2": lambda a, b: np.abs(a - b) ** 2,
-}
+# edge_functions = {
+#     "hadamard": lambda a, b: a * b,
+#     "average": lambda a, b: 0.5 * (a + b),
+#     "l1": lambda a, b: np.abs(a - b),
+#     "l2": lambda a, b: np.abs(a - b) ** 2,
+# }
 
 class PathEmbeddingClassifier:
     def __init__(self, mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, seed):
@@ -27,25 +26,25 @@ class PathEmbeddingClassifier:
         self.train_edges = train_edges
         self.test_edges = np.concatenate((test_positive, test_negative), axis=0)
 
-        if not os.path.exists(file_path + "walks.txt"):
-            self.generate_walks(meta_path, file_path + "walks.txt")
+        if not os.path.exists(file_path + meta_path + "_walks.txt"):
+            self.generate_walks(meta_path, file_path + meta_path + "_walks.txt")
 
-        self.generate_embeddings(file_path + "walks.txt", file_path + "embeddings", os.path.exists(file_path + "embeddings.txt"))
+        self.generate_embeddings(file_path + meta_path + "_walks.txt", file_path + meta_path + "_embeddings", os.path.exists(file_path + meta_path + "_embeddings.txt"))
 
-        if os.path.exists(file_path + "train_edges.npy"):
+        if os.path.exists(file_path + meta_path + "_train_edges.npy"):
             print ("Reading files")
             train_edges_2 = np.load(file_path + "train_edges.npy")
             if np.array_equal(self.train_edges, train_edges_2):
-                self.X_train = np.load(file_path + "X_train.npy")
-                self.Y_train = np.load(file_path + "Y_train.npy")
-                self.X_test = np.load(file_path + "X_test.npy")
-                self.Y_test = np.load(file_path + "Y_test.npy")
+                self.X_train = np.load(file_path + meta_path + "_X_train.npy")
+                self.Y_train = np.load(file_path + meta_path + "_Y_train.npy")
+                self.X_test = np.load(file_path + meta_path + "_X_test.npy")
+                self.Y_test = np.load(file_path + meta_path + "_Y_test.npy")
         else:
             print("Preparing data")
             self.prepare_train(G_train, self.train_edges)
             Y_test = [1 for i in test_positive] + [0 for i in test_negative]
             self.prepare_test(self.test_edges, Y_test)
-            self.save(file_path)
+            self.save(file_path + meta_path + "_" )
 
 
     def train(self, method):
@@ -81,18 +80,13 @@ class PathEmbeddingClassifier:
         self.Y_test = Y_test
 
 
-    def generate_walks(self, path, out_file):
-        print("Generating walks for path " + path)
-        if path == "disease-gene-disease":
-            self.mpg.generate_random_di_g_di(out_file, 100, 100)
-        elif path == "gene-disease-gene":
-            self.mpg.generate_random_g_di_g(out_file, 100, 100)
-        elif path == "drug-gene-drug":
-            self.mpg.generate_random_dr_g_dr(out_file, 100, 100)
-        elif path == "gene-drug-gene":
-            self.mpg.generate_random_dr_g_dr(out_file, 100, 100)
-        else:
+    def generate_walks(self, meta_path, out_file):
+        print("Generating walks for path " + meta_path)
+
+        if meta_path == "all_combined":
             self.mpg.generate_walks(out_file, 10, 10)
+        elif meta_path == "long":
+            self.mpg.generate_walks_2(out_file, 10, 10)
 
     def generate_embeddings(self, walks_file, embed_file, generated):
         if not generated:
@@ -115,12 +109,10 @@ class PathEmbeddingClassifier:
     def create_features(self, train_edges, edge_function="hadamard"):
         print("Creating features ... ")
         X = []
-
         for pair in train_edges:
-            # print(pair)
-            features = edge_functions[edge_function](self.embeddings[pair[0]], self.embeddings[pair[1]])
+            features = self.embeddings[pair[0]] * self.embeddings[pair[1]]
+            # features = edge_functions[edge_function](self.embeddings[pair[0]], self.embeddings[pair[1]])
             X.append(features)
-
         return X
 
     def save(self, path):
@@ -139,6 +131,7 @@ if __name__ == '__main__':
     graph_path = sys.argv[2] # "data/bio/parsed/bio_edgelist.tsv"
     edge_type = sys.argv[3].split("_") # disease_gene
     num = int(sys.argv[4]) # 0
+    meta_path = sys.argv[5] # all_combined OR long
 
     f = open(graph_path)
     G = nx.Graph()
@@ -153,21 +146,11 @@ if __name__ == '__main__':
     p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
     G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
 
-    # p = path + "preprocessed_simple/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    # simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, p)
-    # simple_model.train("LR", num)
-    # simple_model.predict()
-    # print("AUC:", simple_model.evaluate())
-    # print("confussion:", simple_model.evaluate(metric="confussion"))
-
-
-
 
     print("Meta path classifier")
     mpg = MetaPathGeneratorBio(num)
     mpg.read_data(G_train)
 
-    meta_path = "disease_gene"
 
     file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
     metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)

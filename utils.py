@@ -22,6 +22,32 @@ def get_object_index(object_index_dict, object_id):
     return object_index_dict[object_id]
 
 
+def preprocess_sicris_data(in_file):
+    f = open(in_file)
+    firstline = f.readline()
+    author_papers = defaultdict(set)
+    author_fields = defaultdict(set)
+
+    for line in f:
+        line = line.split("\t")
+        author_id = line[2]
+        paper_id = line[6]
+        field_id = line[10]
+        author_papers[author_id].add(paper_id)
+        author_fields[author_id].add(field_id)
+
+    with open("data/sicris/parsed/author_paper.tsv", "w+") as f:
+        for author_id in author_papers:
+            for paper_id in author_papers[author_id]:
+                f.write(author_id + "\t" + paper_id + "\n")
+
+    with open("data/sicris/parsed/author_field.tsv", "w+") as f:
+        for author_id in author_fields:
+            for field_id in author_fields[author_id]:
+                if field_id != "NA":
+                    f.write(author_id + "\t" + field_id + "\n")
+
+
 def preprocess_dlbp_data(in_files):
 
     citations = open("data/dblp/parsed/paper_reference.tsv", "w+")
@@ -278,17 +304,19 @@ def get_edge_adj_matrices(G, edge_types):
     return adj_mats
 
 
-def check_desc(arr):
-    if len(arr) < 3:
-        return False
-
-    for i in range(len(arr)-1):
-        if arr[i] < arr[i+1]:
-            return False
-    return True
-
+def build_edgelist(in_files, dataset):
+    with open(dataset + "_edgelist.tsv", "w+") as out_file:
+        for f_name in in_files:
+            first = f_name.split("/")[-1].split(".")[0].split("_")[0]
+            second = f_name.split("/")[-1].split(".")[0].split("_")[1]
+            with open(f_name) as f:
+                for line in f:
+                    splited = line.strip().split("\t")
+                    out_file.write(first + "_" + splited[0] + "\t" + second + "_" + splited[1] + "\n")
 
 # if __name__ == '__main__':
+#     preprocess_sicris_data("data/sicris/data.tab")
+#     build_edgelist(["data/sicris/parsed/author_field.tsv", "data/sicris/parsed/author_paper.tsv"], "data/sicris/parsed/sicris")
 #     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
 #     # visualize("data/exp/embed.women.wew.w50.l5.txt", "data/exp/women_tsne.pdf")
 #     G, A = load_data("data/bio/parsed/bio_edgelist.tsv")
