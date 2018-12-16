@@ -25,26 +25,11 @@ class PathEmbeddingClassifier:
         self.seed = seed
         self.train_edges = train_edges
         self.test_edges = np.concatenate((test_positive, test_negative), axis=0)
-
-        if not os.path.exists(file_path + meta_path + "_walks.txt"):
-            self.generate_walks(meta_path, file_path + meta_path + "_walks.txt")
-
-        self.generate_embeddings(file_path + meta_path + "_walks.txt", file_path + meta_path + "_embeddings", os.path.exists(file_path + meta_path + "_embeddings.txt"))
-
-        if os.path.exists(file_path + meta_path + "_train_edges.npy"):
-            print ("Reading files")
-            train_edges_2 = np.load(file_path + "train_edges.npy")
-            if np.array_equal(self.train_edges, train_edges_2):
-                self.X_train = np.load(file_path + meta_path + "_X_train.npy")
-                self.Y_train = np.load(file_path + meta_path + "_Y_train.npy")
-                self.X_test = np.load(file_path + meta_path + "_X_test.npy")
-                self.Y_test = np.load(file_path + meta_path + "_Y_test.npy")
-        else:
-            print("Preparing data")
-            self.prepare_train(G_train, self.train_edges)
-            Y_test = [1 for i in test_positive] + [0 for i in test_negative]
-            self.prepare_test(self.test_edges, Y_test)
-            self.save(file_path + meta_path + "_" )
+        self.generate_walks(meta_path, file_path + meta_path + "_walks.txt")
+        self.generate_embeddings(file_path + meta_path + "_walks.txt", file_path + meta_path + "_embeddings", False)
+        self.prepare_train(G_train, self.train_edges)
+        Y_test = [1 for i in test_positive] + [0 for i in test_negative]
+        self.prepare_test(self.test_edges, Y_test)
 
 
     def train(self, method):
