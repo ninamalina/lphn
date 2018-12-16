@@ -69,9 +69,9 @@ class PathEmbeddingClassifier:
         print("Generating walks for path " + meta_path)
 
         if meta_path == "all_combined":
-            self.mpg.generate_walks(out_file, 100, 100)
+            self.mpg.generate_walks(out_file, 100, 10)
         elif meta_path == "long":
-            self.mpg.generate_walks_2(out_file, 100, 100)
+            self.mpg.generate_walks_2(out_file, 100, 10)
 
     def generate_embeddings(self, walks_file, embed_file, generated):
         if not generated:
