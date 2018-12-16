@@ -216,7 +216,7 @@ for epoch in range(FLAGS.epochs):
     t = time.time()
 
     for idx in idx2edge_type:
-        print (idx)
+        # print (idx)
 
         # Construct feed dictionary
         feed_dict = construct_feed_dict(adj_mats_train, adj_mats_train_normalized, features, edge_types, placeholders)
@@ -236,12 +236,12 @@ for epoch in range(FLAGS.epochs):
             best_val_roc = roc_curr
             best_preds = current_preds
 
-        print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-          "train_acc=", "val_roc=", "{:.5f}".format(roc_curr),
-          "val_ap=", "{:.5f}".format(ap_curr),
-          "time=", "{:.5f}".format(time.time() - t))
+    print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
+      "train_acc=", "val_roc=", "{:.5f}".format(roc_curr),
+      "val_ap=", "{:.5f}".format(ap_curr),
+      "time=", "{:.5f}".format(time.time() - t))
 
-        val_roc_score.append(roc_curr)
+        # val_roc_score.appenxd(roc_curr)
 
     # if len(val_roc_score) > 100 and check_desc(val_roc_score[-4:]): # stop learning if roc dropping
     #     break
