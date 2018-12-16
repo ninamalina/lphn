@@ -16,9 +16,9 @@ from sklearn.metrics import average_precision_score
 
 from gaehet.optimizer import OptimizerAE
 from gaehet.model import GCNModelAEHet
-from gaehet.preprocessing import construct_feed_dict, sparse_to_tuple, mask_test_edges, preprocess_graph
+from gaehet.preprocessing import construct_feed_dict, sparse_to_tuple, preprocess_graph
 import networkx as nx
-from utils import read_split, load_graph_data, check_desc, get_edge_adj_matrices
+from utils import read_split, load_graph_data, get_edge_adj_matrices
 
 def construct_placeholders(edge_types):
     placeholders = {
