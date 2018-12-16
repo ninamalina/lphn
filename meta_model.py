@@ -20,9 +20,11 @@ from collections import defaultdict
 # }
 
 class PathEmbeddingClassifier:
-    def __init__(self, mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, seed):
+    def __init__(self, mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, seed, numwalks, length):
         self.mpg = mpg
         self.seed = seed
+        self.numwalks = numwalks
+        self.length = length
         self.train_edges = train_edges
         self.test_edges = np.concatenate((test_positive, test_negative), axis=0)
         self.generate_walks(meta_path, file_path + meta_path + "_walks.txt")
@@ -69,9 +71,9 @@ class PathEmbeddingClassifier:
         print("Generating walks for path " + meta_path)
 
         if meta_path == "all_combined":
-            self.mpg.generate_walks(out_file, 100, 10)
+            self.mpg.generate_walks(out_file, self.numwalks, self.length)
         elif meta_path == "long":
-            self.mpg.generate_walks_2(out_file, 100, 10)
+            self.mpg.generate_walks_2(out_file, self.numwalks, self.length)
 
     def generate_embeddings(self, walks_file, embed_file, generated):
         if not generated:
@@ -117,6 +119,9 @@ if __name__ == '__main__':
     edge_type = sys.argv[3].split("_") # disease_gene
     num = int(sys.argv[4]) # 0
     meta_path = sys.argv[5] # all_combined OR long
+    numwalks = int(sys.argv[6]) # 100
+    length = int(sys.argv[7]) # 100
+
 
     f = open(graph_path)
     G = nx.Graph()
@@ -138,7 +143,7 @@ if __name__ == '__main__':
 
 
     file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num)
+    metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num, numwalks, length)
 
     metapath_model.train("LR")
     metapath_model.predict()
