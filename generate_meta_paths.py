@@ -34,41 +34,6 @@ class MetaPathGeneratorSicris:
 
 
 
-class MetaPathGeneratorWomen:
-    def __init__(self):
-        self.woman_events = defaultdict(list)
-        self.event_women = defaultdict(list)
-
-    def read_data(self, dirpath):
-        with open(dirpath + "/women.txt") as adictfile:
-            header = adictfile.readline()
-            for line in adictfile:
-                toks = line.strip().split(" ") # event woman
-                if len(toks) == 2:
-                    self.event_women["e"+toks[0]].append("w"+toks[1])
-                    self.woman_events["w"+toks[1]].append("e"+toks[0])
-
-    def generate_random_wew(self, outfilename, numwalks, walklength):
-        # woman-event-woman
-        outfile = open(dirpath + "/" + outfilename, 'w')
-        for woman in self.woman_events:
-            w0 = woman
-            for j in xrange(0, numwalks ): #wnum walks
-                outline = w0
-                for i in xrange(0, walklength):
-                    events = self.woman_events[woman]
-                    num_events = len(events)
-                    event_id= random.randrange(num_events)
-                    event = events[event_id]
-                    outline += " " + event
-                    women = self.event_women[event]
-                    num_women = len(women)
-                    woman_id = random.randrange(num_women)
-                    woman = women[woman_id]
-                    outline += " " + woman
-                outfile.write(outline + "\n")
-        outfile.close()
-
 
 class MetaPathGeneratorBio:
     def __init__(self, seed):
@@ -176,9 +141,7 @@ class MetaPathGeneratorBio:
 
                 outfile.write(outline + "\n")
 
-        print(len(all_genes))
         all_genes_2 = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
-        print(len(all_genes_2))
         d = all_genes_2.difference(all_genes)
 
         print("Elements not used:", d)
@@ -215,16 +178,6 @@ class MetaPathGeneratorBio:
                         break
 
                 outfile.write(outline + "\n")
-
-        # for gene in self.gene_genes:
-        #     g0 = gene
-        #     for j in xrange(0, numwalks):  # num walks
-        #         outline = g0
-        #         for i in xrange(0, walklength):
-        #             genes = self.gene_genes[gene]
-        #             gene = random.sample(genes, 1).pop()
-        #             outline += " " + gene
-        #         outfile.write(outline + "\n")
 
         # drug - gene - disease - gene - drug
         for drug in self.drug_genes:
@@ -283,102 +236,7 @@ class MetaPathGeneratorBio:
 
 
 
-    def generate_random_di_g_di(self, outfilename, numwalks, walklength):
-        # disease-gene-disease
-        outfile = open(outfilename, 'w')
-        for disease in self.disease_genes:
-            di0 = disease
-            for j in xrange(0, numwalks):  # num walks
-                outline = di0
-                for i in xrange(0, walklength):
-                    genes = self.disease_genes[disease]
-                    gene = random.sample(genes, 1).pop()
-                    outline += " " + gene
-                    diseases = self.gene_diseases[gene]
-                    disease = random.sample(diseases, 1).pop()
-                    outline += " " + disease
-                outfile.write(outline + "\n")
 
-    def generate_random_g_di_g(self, outfilename, numwalks, walklength):
-        # gene-disease-gene
-        # TODO preverit ce se vse bolezni pojavijo
-        outfile = open(outfilename, 'w')
-        all_genes = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
-        for gene in all_genes:
-            g0 = gene
-            for j in xrange(0, numwalks):  # num walks
-                outline = g0
-                for i in xrange(0, walklength):
-                    if gene in self.gene_diseases:
-                        diseases = self.gene_diseases[gene]
-                        disease = random.sample(diseases, 1).pop()
-                        outline += " " + disease
-                        genes = self.disease_genes[disease]
-                        gene = random.sample(genes, 1).pop()
-                        outline += " " + gene
-                    else:
-                        outline += " " + gene + " " + gene
-
-                outfile.write(outline + "\n")
-
-    def generate_random_g_dr_g(self, outfilename, numwalks, walklength):
-        # gene-drug-gene
-        outfile = open(outfilename, 'w')
-        all_genes = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
-        for gene in all_genes:
-            g0 = gene
-            for j in xrange(0, numwalks):  # num walks
-                outline = g0
-                for i in xrange(0, walklength):
-                    if gene in self.gene_drugs:
-                        drugs = self.gene_drugs[gene]
-                        drug = random.sample(drugs, 1).pop()
-                        outline += " " + drug
-                        genes = self.drug_genes[drug]
-                        gene = random.sample(genes, 1).pop()
-                        outline += " " + gene
-                    else:
-                        outline += " " + gene + " " + gene
-
-                outfile.write(outline + "\n")
-
-    def generate_random_dr_g_dr(self, outfilename, numwalks, walklength):
-        # drug-gene-drug
-        outfile = open(outfilename, 'w')
-        for drug in self.drug_genes:
-            di0 = drug
-            for j in xrange(0, numwalks):  # num walks
-                outline = di0
-                for i in xrange(0, walklength):
-                    genes = self.drug_genes[drug]
-                    gene = random.sample(genes, 1).pop()
-                    outline += " " + gene
-                    drugs = self.gene_drugs[gene]
-                    drug = random.sample(drugs, 1).pop()
-                    outline += " " + drug
-                outfile.write(outline + "\n")
-
-    #
-    # def generate_random_wew(self, outfilename, numwalks, walklength):
-    #     # woman-event-woman
-    #     outfile = open(dirpath + "/" + outfilename, 'w')
-    #     for woman in self.woman_events:
-    #         w0 = woman
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = w0
-    #             for i in xrange(0, walklength):
-    #                 events = self.woman_events[woman]
-    #                 num_events = len(events)
-    #                 event_id = random.randrange(num_events)
-    #                 event = events[event_id]
-    #                 outline += " " + event
-    #                 women = self.event_women[event]
-    #                 num_women = len(women)
-    #                 woman_id = random.randrange(num_women)
-    #                 woman = women[woman_id]
-    #                 outline += " " + woman
-    #             outfile.write(outline + "\n")
-    #     outfile.close()
 
 
 #python py4genMetaPaths.py 1000 100 net_aminer output.aminer.w1000.l100.txt
