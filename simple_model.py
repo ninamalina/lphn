@@ -61,6 +61,7 @@ class SimpleClassifier:
                     if current_roc > best_roc:
                         is_improving = True
                         feature_to_add = feature
+                        best_roc = current_roc
                 if is_improving:
                     best_features = best_features + features[feature_to_add]
                     features = {feature:features[feature] for feature in features if feature!=feature_to_add}
