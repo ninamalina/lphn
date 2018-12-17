@@ -55,7 +55,7 @@ class SimpleClassifier:
                     print(current_selected)
                     clf = linear_model.LogisticRegression(class_weight="balanced", random_state=seed)
                     clf.fit(self.X_train[:,current_selected], self.Y_train)
-                    pred = clf.predict(self.X_val[:,current_selected])
+                    pred = clf.predict_proba(self.X_val[:,current_selected])[:,1]
                     print(pred)
                     current_roc = roc_auc_score(self.Y_val, pred)
                     print(current_roc)
