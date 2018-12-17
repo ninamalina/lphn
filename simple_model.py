@@ -66,6 +66,7 @@ class SimpleClassifier:
 
             self.clf = linear_model.LogisticRegression(class_weight="balanced", random_state=seed)
             self.clf.fit(self.X_train[:,best_features], self.Y_train)
+            self.X_val = self.X_val[:,best_features]
             print(best_features)
 
     def predict(self, prob=False):
