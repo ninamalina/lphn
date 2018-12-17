@@ -57,6 +57,7 @@ class SimpleClassifier:
                     clf.fit(self.X_train[:,current_selected], self.Y_train)
                     pred = clf.predict(self.X_val[:,current_selected])
                     current_roc = roc_auc_score(self.Y_val, pred)
+                    print(current_roc)
                     if current_roc > best_roc:
                         is_improving = True
                         feature_to_add = feature
@@ -67,6 +68,7 @@ class SimpleClassifier:
             self.clf = linear_model.LogisticRegression(class_weight="balanced", random_state=seed)
             self.clf.fit(self.X_train[:,best_features], self.Y_train)
             self.X_val = self.X_val[:,best_features]
+            self.X_test = self.X_test[:,best_features]
             print(best_features)
 
     def predict(self, prob=False):
