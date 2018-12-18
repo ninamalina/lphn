@@ -98,16 +98,17 @@ class GCNModelAEHet(Model):
                 self.edge_type2decoder[i, j] = InnerProductDecoder(
                     input_dim=FLAGS.hidden2, logging=self.logging,
                     edge_type=(i, j),
-                    dropout=self.dropout)
+                    act=lambda x: x, dropout=self.dropout)
             elif decoder == 'distmult':
                 self.edge_type2decoder[i, j] = DistMultDecoder(
                     input_dim=FLAGS.hidden2, logging=self.logging,
-                    edge_type=(i, j), dropout=self.dropout)
+                    edge_type=(i, j),
+                    act=lambda x: x, dropout=self.dropout)
             elif decoder == 'bilinear':
                 self.edge_type2decoder[i, j] = BilinearDecoder(
                     input_dim=FLAGS.hidden2, logging=self.logging,
                     edge_type=(i, j),
-                     dropout=self.dropout)
+                    act=lambda x: x, dropout=self.dropout)
 
 
         # self.latent_inters = []

@@ -33,27 +33,27 @@ def get_roc_score(edges_pos, edges_neg, edge_type, emb=None, adj_rec=None):
         feed_dict.update({placeholders['dropout']: 0})
         emb = sess.run(model.reconstructions, feed_dict=feed_dict)
         adj_rec = emb[edge_type]
-    #
-    # def sigmoid(x):
-    #     return 1 / (1 + np.exp(-x))
+
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
 
     preds = []
     pos = []
     for e in edges_pos:
 
-        preds.append(adj_rec[e[0], e[1]])
+        preds.append(sigmoid(adj_rec[e[0], e[1]]))
         pos.append(adj_mats_orig[edge_type][e[0], e[1]])
 
     preds_neg = []
     neg = []
     for e in edges_neg:
-        preds_neg.append(adj_rec[e[0], e[1]])
+        preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
         neg.append(adj_mats_orig[edge_type][e[0], e[1]])
 
     preds_all = np.hstack([preds, preds_neg])
-    print("preds", preds_all)
+    # print(preds_all)
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
-    print("labels", labels_all)
+    # print(labels_all)
     roc_score = roc_auc_score(labels_all, preds_all)
     ap_score = average_precision_score(labels_all, preds_all)
 
@@ -270,6 +270,8 @@ for epoch in range(FLAGS.epochs):
         if roc_curr > best_val_roc: # save best model
             best_val_roc = roc_curr
             best_preds = current_preds
+
+        # print(get_roc_score(val_negative, val_positive, k)[1])
 
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
       "train_acc=","{:.5f}".format(avg_acc), "val_roc=", "{:.5f}".format(roc_curr),
