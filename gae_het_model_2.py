@@ -226,12 +226,13 @@ for epoch in range(FLAGS.epochs):
         feed_dict.update({placeholders['dropout']: FLAGS.dropout})
         # Run single weight update
         if optimizer_str == "multi":
-            outs = sess.run([optimizers[idx].opt_op, optimizers[idx].cost], feed_dict=feed_dict)
+            outs = sess.run([optimizers[idx].opt_op, optimizers[idx].cost, optimizers[idx].accuracy], feed_dict=feed_dict)
         else:
             outs = sess.run([opt.opt_op, opt.cost], feed_dict=feed_dict)
 
         # Compute average loss
         avg_cost = outs[1]
+        avg_acc = outs[1]
 
         current_preds, roc_curr, ap_curr = get_roc_score(val_positive, val_negative, k)
 
@@ -239,10 +240,10 @@ for epoch in range(FLAGS.epochs):
             best_val_roc = roc_curr
             best_preds = current_preds
 
-        print(get_roc_score(val_negative, val_positive, k)[1])
+        # print(get_roc_score(val_negative, val_positive, k)[1])
 
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-      "train_acc=", "val_roc=", "{:.5f}".format(roc_curr),
+      "train_acc=","{:.5f}".format(avg_acc), "val_roc=", "{:.5f}".format(roc_curr),
       "val_ap=", "{:.5f}".format(ap_curr),
       "time=", "{:.5f}".format(time.time() - t))
 
