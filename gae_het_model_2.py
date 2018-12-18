@@ -50,7 +50,10 @@ def get_roc_score(edges_pos, edges_neg, edge_type, emb=None, adj_rec=None):
         neg.append(adj_mats_orig[edge_type][e[0], e[1]])
 
     preds_all = np.hstack([preds, preds_neg])
+    print(preds_all)
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
+    print(labels_all)
+    print(np.hstack([pos, neg]))
     roc_score = roc_auc_score(labels_all, preds_all)
     ap_score = average_precision_score(labels_all, preds_all)
 
