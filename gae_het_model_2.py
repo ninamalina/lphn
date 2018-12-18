@@ -33,21 +33,21 @@ def get_roc_score(edges_pos, edges_neg, edge_type, emb=None, adj_rec=None):
         feed_dict.update({placeholders['dropout']: 0})
         emb = sess.run(model.reconstructions, feed_dict=feed_dict)
         adj_rec = emb[edge_type]
-
-    def sigmoid(x):
-        return 1 / (1 + np.exp(-x))
+    #
+    # def sigmoid(x):
+    #     return 1 / (1 + np.exp(-x))
 
     preds = []
     pos = []
     for e in edges_pos:
 
-        preds.append(sigmoid(adj_rec[e[0], e[1]]))
+        preds.append(adj_rec[e[0], e[1]])
         pos.append(adj_mats_orig[edge_type][e[0], e[1]])
 
     preds_neg = []
     neg = []
     for e in edges_neg:
-        preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
+        preds_neg.append(adj_rec[e[0], e[1]])
         neg.append(adj_mats_orig[edge_type][e[0], e[1]])
 
     preds_all = np.hstack([preds, preds_neg])
@@ -150,7 +150,7 @@ val_negative = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in val_negativ
 test_positive = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in test_positive_e]
 test_negative = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in test_negative_e]
 
-train_edges = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in train_edges]
+# train_edges = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in train_edges]
 
 
 
@@ -265,23 +265,17 @@ for epoch in range(FLAGS.epochs):
 
         current_preds, roc_curr, ap_curr = get_roc_score(val_positive, val_negative, k)
 
-        print(get_train_roc_score(train_edges, k)[1])
+        # print(get_train_roc_score(train_edges, k)[1])
 
         if roc_curr > best_val_roc: # save best model
             best_val_roc = roc_curr
             best_preds = current_preds
-
-        # print(get_roc_score(val_negative, val_positive, k)[1])
 
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
       "train_acc=","{:.5f}".format(avg_acc), "val_roc=", "{:.5f}".format(roc_curr),
       "val_ap=", "{:.5f}".format(ap_curr),
       "time=", "{:.5f}".format(time.time() - t))
 
-        # val_roc_score.appenxd(roc_curr)
-
-    # if len(val_roc_score) > 100 and check_desc(val_roc_score[-4:]): # stop learning if roc dropping
-    #     break
 
 print("Optimization Finished!")
 
