@@ -25,8 +25,9 @@ class OptimizerAE(object):
     def __init__(self, preds, labels, norm, pos_weight):
 
         labels = tf.sparse_tensor_to_dense(labels, validate_indices=False)
-        # loss = norm * tf.nn.weighted_cross_entropy_with_logits(targets=labels,  logits=preds, pos_weight=pos_weight)
-        loss =  tf.nn.sigmoid_cross_entropy_with_logits(labels=labels,  logits=preds)
+        # loss = norm *
+        loss = tf.nn.weighted_cross_entropy_with_logits(targets=labels,  logits=preds, pos_weight=pos_weight)
+        # loss =  tf.nn.sigmoid_cross_entropy_with_logits(labels=labels,  logits=preds)
         # loss =  tf.nn.softmax_cross_entropy_with_logits(targets=labels,  logits=preds)
 
         self.cost = tf.reduce_mean(loss)
