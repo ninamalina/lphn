@@ -59,6 +59,26 @@ def get_roc_score(edges_pos, edges_neg, edge_type, emb=None, adj_rec=None):
 
     return adj_rec, roc_score, ap_score
 
+def get_train_roc_score(train_edges, edge_type):
+
+    feed_dict.update({placeholders['dropout']: 0})
+    emb = sess.run(model.reconstructions, feed_dict=feed_dict)
+    adj_rec = emb[edge_type]
+
+    def sigmoid(x):
+        return 1 / (1 + np.exp(-x))
+
+    preds = []
+    labels = []
+    for e in train_edges:
+        preds.append(sigmoid(adj_rec[e[0], e[1]]))
+        labels.append(adj_mats_orig[edge_type][e[0], e[1]])
+    # print(labels_all)
+    roc_score = roc_auc_score(preds, labels)
+    ap_score = average_precision_score(preds, labels)
+
+    return adj_rec, roc_score, ap_score
+    pass
 
 # Settings
 flags = tf.app.flags
@@ -127,6 +147,10 @@ val_positive = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in val_positiv
 val_negative = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in val_negative_e]
 test_positive = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in test_positive_e]
 test_negative = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in test_negative_e]
+
+train_edges = [(nodes0.index(e1), nodes1.index(e2)) for (e1, e2) in train_edges]
+
+
 
 print("Dataset read")
 
@@ -215,6 +239,9 @@ best_val_roc = 0
 best_preds = None
 
 # Train model
+
+
+
 for epoch in range(FLAGS.epochs):
     t = time.time()
 
@@ -235,6 +262,8 @@ for epoch in range(FLAGS.epochs):
         avg_acc = outs[2]
 
         current_preds, roc_curr, ap_curr = get_roc_score(val_positive, val_negative, k)
+
+        print(get_train_roc_score(train_edges, k)[1])
 
         if roc_curr > best_val_roc: # save best model
             best_val_roc = roc_curr
