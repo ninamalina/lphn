@@ -69,7 +69,8 @@ class GCNModelAEHet(Model):
                 logging=self.logging)(self.inputs[j]))
 
         for i, hid1 in self.hidden1.items():
-            self.hidden1[i] = tf.nn.relu(tf.div(tf.add_n(hid1), tf.int32(len(hid1))))
+            self.hidden1[i] = tf.nn.relu(tf.add_n(hid1))
+            # self.hidden1[i] = tf.nn.relu(tf.div(tf.add_n(hid1), tf.int32(len(hid1))))
             # self.hidden1[i] = tf.nn.relu(tf.div)
 
 
@@ -85,7 +86,7 @@ class GCNModelAEHet(Model):
         for i, embeds in self.embeddings_reltyp.items():
             # self.embeddings[i] = tf.nn.relu(tf.add_n(embeds))
             # self.embeddings[i] = tf.add_n(embeds)
-            self.embeddings[i] = tf.div(tf.add_n(embeds), tf.int32(len(embeds)))
+            self.embeddings[i] = tf.add_n(embeds)
 
         print("embeddings", self.embeddings) # vsak embedding je en tensor -  emben+ddingi za en tip vozlisc
         print(self.embeddings_reltyp.items()) # 0, 1, 2
