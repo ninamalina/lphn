@@ -38,9 +38,14 @@ class OptimizerAE(object):
         self.opt_op = self.optimizer.minimize(self.cost)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
+        self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds), 0.5), tf.int32),
+                                           tf.cast(labels, tf.int32))
+
+
+
         # self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds_sub), 0.5), tf.int32),
         #                                    tf.cast(labels_sub, tf.int32))
-        # self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
+        self.accuracy = tf.reduce_mean(tf.cast(self.correct_prediction, tf.float32))
 
 
 class OptimizerVAE(object):
