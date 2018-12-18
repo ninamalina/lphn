@@ -26,21 +26,16 @@ class OptimizerAE(object):
 
         labels = tf.sparse_tensor_to_dense(labels, validate_indices=False)
         # loss = norm * tf.nn.weighted_cross_entropy_with_logits(targets=labels,  logits=preds, pos_weight=pos_weight)
-        print("labels", labels)
-        print("preds", preds)
         loss =  tf.nn.sigmoid_cross_entropy_with_logits(labels=labels,  logits=preds)
-        print("loss", loss)
         # loss =  tf.nn.softmax_cross_entropy_with_logits(targets=labels,  logits=preds)
 
         self.cost = tf.reduce_mean(loss)
-        print("cost", self.cost)
 
         # self.cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.predictions))
         # self.cost = norm * tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
         self.optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)  # Adam Optimizer
 
         self.opt_op = self.optimizer.minimize(self.cost)
-        print("opt", self.opt_op)
         self.grads_vars = self.optimizer.compute_gradients(self.cost)
 
         # self.correct_prediction = tf.equal(tf.cast(tf.greater_equal(tf.sigmoid(preds_sub), 0.5), tf.int32),
