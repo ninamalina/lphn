@@ -232,7 +232,7 @@ for epoch in range(FLAGS.epochs):
 
         # Compute average loss
         avg_cost = outs[1]
-        avg_acc = outs[1]
+        avg_acc = outs[2]
 
         current_preds, roc_curr, ap_curr = get_roc_score(val_positive, val_negative, k)
 
