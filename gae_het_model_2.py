@@ -202,7 +202,9 @@ model = GCNModelAEHet(placeholders,
                       edge_types=edge_types,
                       decoders=edge_type2decoder)
 
+
 pos_weights = {et: float(adj_mats_train[et].shape[0] * adj_mats_train[et].shape[0] - adj_mats_train[et].sum()) / adj_mats_train[et].sum() for et in edge_types}
+print(pos_weights)
 norms = {et: adj_mats_train[et].shape[0] * adj_mats_train[et].shape[0] / float((adj_mats_train[et].shape[0] * adj_mats_train[et].shape[0] - adj_mats_train[et].sum()) * 2) for et in edge_types}
 
 # Optimizer
