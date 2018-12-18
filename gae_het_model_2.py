@@ -74,6 +74,8 @@ def get_train_roc_score(train_edges, edge_type):
         preds.append(sigmoid(adj_rec[e[0], e[1]]))
         labels.append(adj_mats_orig[edge_type][e[0], e[1]])
     # print(labels_all)
+    print(preds)
+    print(labels)
     roc_score = roc_auc_score(preds, labels)
     ap_score = average_precision_score(preds, labels)
 
