@@ -234,9 +234,9 @@ with tf.name_scope('optimizer'):
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
-cost_val = []
-acc_val = []
-val_roc_score = []
+# cost_val = []
+# acc_val = []
+# val_roc_score = []
 
 # adj_label = adj_train + sp.eye(adj_train.shape[0])
 # adj_label = sparse_to_tuple(adj_label)

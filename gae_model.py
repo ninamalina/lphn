@@ -22,9 +22,7 @@ import networkx as nx
 import sys
 sys.path.insert(0, "..../lpnh")
 
-from utils import read_split, load_graph_data, check_desc
-
-
+from utils import read_split, load_graph_data
 
 # Settings
 flags = tf.app.flags
@@ -54,7 +52,6 @@ edge_type = FLAGS.edge_type
 # Load data
 # adj, features = load_data(dataset_str)
 G = load_graph_data(graph_path)
-
 
 # Store original adjacency matrix (without diagonal entries) for later
 nodes = list(G.nodes())
@@ -137,22 +134,22 @@ cost_val = []
 acc_val = []
 
 
-def get_roc_score(edges_pos, edges_neg, emb=None):
-    if emb is None:
+def get_roc_score(edges_pos, edges_neg, adj_rec=None):
+    if adj_rec is None:
         feed_dict.update({placeholders['dropout']: 0})
         emb = sess.run(model.z_mean, feed_dict=feed_dict)
+        adj_rec = np.dot(emb, emb.T)
+
 
     def sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
     # Predict on test set of edges
-    adj_rec = np.dot(emb, emb.T)
+
     preds = []
     pos = []
-    # print(adj_rec)
-    for e in edges_pos:
-        # print(e)
 
+    for e in edges_pos:
         preds.append(sigmoid(adj_rec[e[0], e[1]]))
         pos.append(adj_orig[e[0], e[1]])
 
@@ -165,17 +162,17 @@ def get_roc_score(edges_pos, edges_neg, emb=None):
     preds_all = np.hstack([preds, preds_neg])
     labels_all = np.hstack([np.ones(len(preds)), np.zeros(len(preds))])
     roc_score = roc_auc_score(labels_all, preds_all)
-    # ap_score = average_precision_score(labels_all, preds_all)
-    acc = roc_auc_score(labels_all, np.round(preds_all))
-    return roc_score, acc
+    ap_score = average_precision_score(labels_all, preds_all)
+    return adj_rec, roc_score, ap_score
 
 
-cost_val = []
-acc_val = []
 val_roc_score = []
 
 adj_label = adj_train + sp.eye(adj_train.shape[0])
 adj_label = sparse_to_tuple(adj_label)
+
+best_val_roc = 0
+best_preds = None
 
 # Train model
 for epoch in range(FLAGS.epochs):
@@ -191,19 +188,19 @@ for epoch in range(FLAGS.epochs):
     avg_cost = outs[1]
     avg_accuracy = outs[2]
 
-    roc_curr, ap_curr = get_roc_score(val_positive, val_negative)
-    val_roc_score.append(roc_curr)
+    current_preds, roc_curr, ap_curr = get_roc_score(val_positive, val_negative)
+
+    if roc_curr > best_val_roc:  # save best model
+        best_val_roc = roc_curr
+        best_preds = current_preds
 
     print("Epoch:", '%04d' % (epoch + 1), "train_loss=", "{:.5f}".format(avg_cost),
-          "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(val_roc_score[-1]),
+          "train_acc=", "{:.5f}".format(avg_accuracy), "val_roc=", "{:.5f}".format(roc_curr),
           "val_ap=", "{:.5f}".format(ap_curr),
           "time=", "{:.5f}".format(time.time() - t))
 
-    if check_desc(val_roc_score[-3:]): # stop learning if roc dropping
-        break
-
 print("Optimization Finished!")
 
-roc_score, acc_score = get_roc_score(test_positive, test_negative)
+_, roc_score, ap_score = get_roc_score(test_positive, test_negative, adj_rec=best_preds)
 print('Test ROC score: ' + str(roc_score))
-print('Test ACC score: ' + str(acc_score))
+print('Test AP score: ' + str(ap_score))
