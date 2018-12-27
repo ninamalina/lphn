@@ -114,7 +114,7 @@ if dataset_str == "bio":
     type_num_dict = {"disease": 0, "drug": 1, "gene":2}
     num_type_dict = {0: "disease", 1: "drug", 2: "gene"}
 elif dataset_str == "sicris":
-    edge_types_strings = ["field_author", "paper_author"]
+    edge_types_strings = ["author_field", "author_paper"]
     type_num_dict = {"field": 0, "paper": 1, "author": 2}
     num_type_dict = {0: "field", 1: "paper", 2: "author"}
 
