@@ -109,10 +109,15 @@ random_seed = FLAGS.random_seed
 graph_path = dataset_path + dataset_str + "_edgelist.tsv"
 edge_type = FLAGS.edge_type
 
+if dataset_str == "bio":
+    edge_types_strings = ["disease_gene", "drug_gene", "gene_gene"]
+    type_num_dict = {"disease": 0, "drug": 1, "gene":2}
+    num_type_dict = {0: "disease", 1: "drug", 2: "gene"}
+elif dataset_str == "sicris":
+    edge_types_strings = ["field_author", "paper_author"]
+    type_num_dict = {"field": 0, "paper": 1, "author": 2}
+    num_type_dict = {0: "field", 1: "paper", 2: "author"}
 
-edge_types_strings = ["disease_gene", "drug_gene", "gene_gene"]
-type_num_dict = {"disease": 0, "drug": 1, "gene":2}
-num_type_dict = {0: "disease", 1: "drug", 2: "gene"}
 
 edge_types = []
 for et in edge_types_strings:
