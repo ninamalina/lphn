@@ -274,17 +274,18 @@ def get_edge_adj_matrices(G, edge_types):
     for edge_type in edge_types:
         edge_type_0 = edge_type.split("_")[0]
         edge_type_1 = edge_type.split("_")[1]
-        if edge_type_0 > edge_type_1:
-            temp = edge_type_0
-            edge_type_0 = edge_type_1
-            edge_type_1 = temp
+        desc = (edge_type_0 > edge_type_1)
 
         nodes_0 = [n for n in G.nodes if n.startswith(edge_type_0)]
         nodes_1 = [n for n in G.nodes if n.startswith(edge_type_1)]
 
         selected_edges = [e for e in G.edges if (e[0].startswith(edge_type_0) and e[1].startswith(edge_type_1))
                       or (e[0].startswith(edge_type_1) and e[1].startswith(edge_type_0))]
-        selected_edges = [(e[1], e[0]) if e[0] > e[1] else e for e in selected_edges]
+        if desc:
+            selected_edges = [(e[1], e[0]) if e[0] < e[1] else e for e in selected_edges]
+        else:
+            selected_edges = [(e[1], e[0]) if e[0] > e[1] else e for e in selected_edges]
+
         G_edge_type = nx.Graph()
         G_edge_type.add_nodes_from(nodes_0 + nodes_1)
         G_edge_type.add_edges_from(selected_edges)
