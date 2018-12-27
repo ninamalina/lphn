@@ -274,6 +274,11 @@ def get_edge_adj_matrices(G, edge_types):
     for edge_type in edge_types:
         edge_type_0 = edge_type.split("_")[0]
         edge_type_1 = edge_type.split("_")[1]
+        if edge_type_0 > edge_type_1:
+            temp = edge_type_0
+            edge_type_0 = edge_type_1
+            edge_type_1 = temp
+
         nodes_0 = [n for n in G.nodes if n.startswith(edge_type_0)]
         nodes_1 = [n for n in G.nodes if n.startswith(edge_type_1)]
 
