@@ -131,17 +131,17 @@ class MetaPathGeneratorSicris:
                 outline = a0
                 for i in xrange(0, walklength):
                     fields = self.author_fields[author]
-                    field = random.sample(fields, 1).pop()
-                    outline += " " + field
-                    authors = self.field_authors[field]
-                    author = random.sample(authors, 1).pop()
-                    outline += " " + author
-                    papers = self.author_papers[author]
-                    if papers:
-                        paper = random.sample(papers, 1).pop()
-                        outline += " " + paper
-                        authors = self.paper_authors[paper]
-                        if authors:
+                    if fields:
+                        field = random.sample(fields, 1).pop()
+                        outline += " " + field
+                        authors = self.field_authors[field]
+                        author = random.sample(authors, 1).pop()
+                        outline += " " + author
+                        papers = self.author_papers[author]
+                        if papers:
+                            paper = random.sample(papers, 1).pop()
+                            outline += " " + paper
+                            authors = self.paper_authors[paper]
                             author = random.sample(authors, 1).pop()
                             outline += " " + author
                         else:
@@ -188,24 +188,23 @@ class MetaPathGeneratorSicris:
                 outline = a0
                 for i in xrange(0, walklength):
                     papers = self.author_papers[author]
-                    paper = random.sample(papers, 1).pop()
-                    outline += " " + paper
-                    authors = self.paper_authors[paper]
-                    author = random.sample(authors, 1).pop()
-                    outline += " " + author
-                    fields = self.author_fields[author]
-                    if fields:
-                        field = random.sample(fields, 1).pop()
-                        outline += " " + field
-                        authors = self.field_authors[field]
-                        if authors:
+                    if papers:
+                        paper = random.sample(papers, 1).pop()
+                        outline += " " + paper
+                        authors = self.paper_authors[paper]
+                        author = random.sample(authors, 1).pop()
+                        outline += " " + author
+                        fields = self.author_fields[author]
+                        if fields:
+                            field = random.sample(fields, 1).pop()
+                            outline += " " + field
+                            authors = self.field_authors[field]
                             author = random.sample(authors, 1).pop()
                             outline += " " + author
                         else:
                             break
                     else:
                         break
-
                 outfile.write(outline + "\n")
                 author = a0
 
