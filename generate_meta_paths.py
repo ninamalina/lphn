@@ -6,10 +6,10 @@ from collections import defaultdict
 
 class MetaPathGeneratorSicris:
     def __init__(self, seed):
-        self.field_authors = dict()
-        self.author_fields = dict()
-        self.paper_authors = dict()
-        self.author_papers = dict()
+        self.field_authors = defaultdict(list)
+        self.author_fields = defaultdict(list)
+        self.paper_authors = defaultdict(list)
+        self.author_papers = defaultdict(list)
         random.seed(seed)
 
     def read_data(self, G):
