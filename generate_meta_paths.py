@@ -29,10 +29,185 @@ class MetaPathGeneratorSicris:
                 self.paper_authors[edge[0]].append(edge[1])
                 self.author_papers[edge[1]].append(edge[0])
 
-    # def generate_walks(selfoutfilename, numwalks, walklength):
+
+    def generate_walks(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # paper - author
+        for paper in self.paper_authors:
+            p0 = paper
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    authors = self.paper_authors[paper]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    papers = self.author_papers[author]
+                    paper = random.sample(papers, 1).pop()
+                    outline += " " + paper
+                outfile.write(outline + "\n")
+                paper = p0
+
+        # author - paper
+        for author in self.author_papers:
+            a0 = author
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    papers = self.author_papers[author]
+                    paper = random.sample(papers, 1).pop()
+                    outline += " " + paper
+                    authors = self.paper_authors[paper]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                outfile.write(outline + "\n")
+                author = a0
+
+        # field - author
+        for field in self.field_authors:
+            f0 = field
+            for j in xrange(0, numwalks):  # num walks
+                outline = f0
+                for i in xrange(0, walklength):
+                    authors = self.field_authors[field]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    fields = self.author_fields[author]
+                    field = random.sample(fields, 1).pop()
+                    outline += " " + field
+                outfile.write(outline + "\n")
+                field = f0
+
+        # author - field
+        for author in self.author_fields:
+            a0 = author
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    fields = self.author_fields[author]
+                    field = random.sample(fields, 1).pop()
+                    outline += " " + field
+                    authors = self.field_authors[field]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                outfile.write(outline + "\n")
+                author = a0
+
+    def generate_walks_2(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # paper - author - field - author - paper
+        for paper in self.paper_authors:
+            p0 = paper
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    authors = self.paper_authors[paper]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    fields = self.author_fields[author]
+                    if fields:
+                        field = random.sample(fields, 1).pop()
+                        outline += " " + field
+                        authors = self.field_authors[field]
+                        author = random.sample(authors,1).pop()
+                        outline += " " + author
+                        papers = self.author_papers[author]
+                        if papers:
+                            paper = random.sample(papers, 1).pop()
+                            outline += " " + paper
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                paper = p0
+
+        # author - field - author - paper - author
+        for author in self.author_fields:
+            a0 = author
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    fields = self.author_fields[author]
+                    field = random.sample(fields, 1).pop()
+                    outline += " " + field
+                    authors = self.field_authors[field]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    papers = self.author_papers[author]
+                    if papers:
+                        paper = random.sample(papers, 1).pop()
+                        outline += " " + paper
+                        authors = self.paper_authors[paper]
+                        if authors:
+                            author = random.sample(authors, 1).pop()
+                            outline += " " + author
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                author = a0
+
+        # field - author - paper - author - field
+        for field in self.field_authors:
+            f0 = field
+            for j in xrange(0, numwalks):  # num walks
+                outline = f0
+                for i in xrange(0, walklength):
+                    authors = self.field_authors[field]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    papers = self.author_papers[author]
+                    if papers:
+                        paper = random.sample(papers, 1).pop()
+                        outline += " " + paper
+                        authors = self.paper_authors[paper]
+                        author = random.sample(authors, 1).pop()
+                        outline += " " + author
+                        fields = self.author_fields[author]
+                        if fields:
+                            field = random.sample(fields, 1).pop()
+                            outline += " " + field
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                field = f0
 
 
+        # author - paper - author - field - author
+        for author in self.author_papers:
+            a0 = author
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    papers = self.author_papers[author]
+                    paper = random.sample(papers, 1).pop()
+                    outline += " " + paper
+                    authors = self.paper_authors[paper]
+                    author = random.sample(authors, 1).pop()
+                    outline += " " + author
+                    fields = self.author_fields[author]
+                    if fields:
+                        field = random.sample(fields, 1).pop()
+                        outline += " " + field
+                        authors = self.field_authors[field]
+                        if authors:
+                            author = random.sample(authors, 1).pop()
+                            outline += " " + author
+                        else:
+                            break
+                    else:
+                        break
 
+                outfile.write(outline + "\n")
+                author = a0
 
 
 class MetaPathGeneratorBio:
@@ -80,6 +255,7 @@ class MetaPathGeneratorBio:
                     gene = random.sample(genes, 1).pop()
                     outline += " " + gene
                 outfile.write(outline + "\n")
+                gene = g0
 
         # disease-gene-disease paths
         for disease in self.disease_genes:
@@ -95,12 +271,13 @@ class MetaPathGeneratorBio:
                     disease = random.sample(diseases, 1).pop()
                     outline += " " + disease
                 outfile.write(outline + "\n")
+                disease = di0
 
         # drug-gene-drug paths
         for drug in self.drug_genes:
-            di0 = drug
+            dr0 = drug
             for j in xrange(0, numwalks):  # num walks
-                outline = di0
+                outline = dr0
                 for i in xrange(0, walklength):
                     genes = self.drug_genes[drug]
                     gene = random.sample(genes, 1).pop()
@@ -110,6 +287,7 @@ class MetaPathGeneratorBio:
                     drug = random.sample(drugs, 1).pop()
                     outline += " " + drug
                 outfile.write(outline + "\n")
+                drug = dr0
 
 
         for gene in self.gene_diseases:
@@ -126,6 +304,7 @@ class MetaPathGeneratorBio:
                     outline += " " + gene
 
                 outfile.write(outline + "\n")
+                gene = g0
 
         for gene in self.gene_drugs:
             g0 = gene
@@ -140,6 +319,7 @@ class MetaPathGeneratorBio:
                     outline += " " + gene
 
                 outfile.write(outline + "\n")
+                gene = g0
 
         all_genes_2 = set(self.gene_diseases.keys() + self.gene_drugs.keys() + self.gene_genes.keys())
         d = all_genes_2.difference(all_genes)
@@ -178,12 +358,13 @@ class MetaPathGeneratorBio:
                         break
 
                 outfile.write(outline + "\n")
+                gene = g0
 
         # drug - gene - disease - gene - drug
         for drug in self.drug_genes:
-            di0 = drug
+            dr0 = drug
             for j in xrange(0, numwalks):  # num walks
-                outline = di0
+                outline = dr0
                 for i in xrange(0, walklength):
                     genes = self.drug_genes[drug]
                     gene = random.sample(genes, 1).pop()
@@ -205,6 +386,7 @@ class MetaPathGeneratorBio:
                         break
 
                 outfile.write(outline + "\n")
+                drug = dr0
 
         # disease - gene - drug - gene - disease
         for disease in self.disease_genes:
@@ -233,6 +415,7 @@ class MetaPathGeneratorBio:
                         break
 
                 outfile.write(outline + "\n")
+                disease = di0
 
 
 

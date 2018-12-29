@@ -7,7 +7,7 @@ from sklearn import linear_model
 import os
 import sys
 from utils import read_split
-from generate_meta_paths import MetaPathGeneratorBio
+from generate_meta_paths import MetaPathGeneratorBio, MetaPathGeneratorSicris
 from subprocess import call
 from collections import defaultdict
 
@@ -113,14 +113,15 @@ class PathEmbeddingClassifier:
 
 if __name__ == '__main__':
 
-    # python meta_model.py data/bio/parsed/ data/bio/parsed/bio_edgelist.tsv disease_gene 0
-    path = sys.argv[1] # "data/bio/parsed/"
-    graph_path = sys.argv[2] # "data/bio/parsed/bio_edgelist.tsv"
-    edge_type = sys.argv[3].split("_") # disease_gene
-    num = int(sys.argv[4]) # 0
-    meta_path = sys.argv[5] # all_combined OR long
-    numwalks = int(sys.argv[6]) # 100
-    length = int(sys.argv[7]) # 100
+    # python meta_model.py bio disease_gene 0 all_combined 100 2
+    dataset = sys.argv[1] # bio, sicris
+    path = "data/" + dataset +"/parsed/"
+    graph_path = path + dataset + "_edgelist.tsv"
+    edge_type = sys.argv[2].split("_") # disease_gene
+    random_seed = int(sys.argv[3]) # 0
+    meta_path = sys.argv[4] # all_combined OR long
+    numwalks = int(sys.argv[5]) # 100
+    length = int(sys.argv[6]) # 100
 
 
     f = open(graph_path)
@@ -133,17 +134,20 @@ if __name__ == '__main__':
     G.remove_edges_from(G.selfloop_edges())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
 
-    p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
+    p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(random_seed) + "/"
+    G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, random_seed, p)
 
 
     print("Meta path classifier")
-    mpg = MetaPathGeneratorBio(num)
+    if dataset == "bio":
+        mpg = MetaPathGeneratorBio(random_seed)
+    elif dataset == "sicris":
+        mpg = MetaPathGeneratorSicris(random_seed)
+
     mpg.read_data(G_train)
 
-
-    file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
-    metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, num, numwalks, length)
+    file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(random_seed) + "/"
+    metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, random_seed, numwalks, length)
 
     metapath_model.train("LR")
     metapath_model.predict()
