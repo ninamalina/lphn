@@ -146,12 +146,13 @@ class SimpleClassifier:
 
 if __name__ == '__main__':
 
-    # python simple_model.py data/bio/parsed/ data/bio/parsed/bio_edgelist.tsv disease_gene 0
-    path = sys.argv[1] # "data/bio/parsed/"
-    graph_path = sys.argv[2] # "data/bio/parsed/bio_edgelist.tsv"
-    edge_type = sys.argv[3].split("_") # disease_gene
-    num = int(sys.argv[4]) # 0
-    method = sys.argv[5] # LR or FS
+    # python simple_model.py imdb genre_title 0 FS
+    dataset = sys.argv[1]
+    path = "data/" + dataset + "/parsed/"
+    graph_path = path + dataset + "_edgelist.tsv"
+    edge_type = sys.argv[2].split("_") # disease_gene
+    num = int(sys.argv[3]) # 0
+    method = sys.argv[4] # LR or FS
 
     f = open(graph_path)
     G = nx.Graph()
@@ -161,9 +162,11 @@ if __name__ == '__main__':
         G.add_edge(a, b)
 
     G.remove_edges_from(G.selfloop_edges())
+    print(G.number_of_nodes())
     GC = max(nx.connected_component_subgraphs(G), key=len) # take greatest connected component
-
+    print(GC.number_of_nodes())
     p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
+    print(p)
     G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
 
     p = path + "features/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
