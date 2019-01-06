@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import os
 from collections import defaultdict
 import scipy.sparse as sp
+import operator
 
 
 
@@ -120,6 +121,213 @@ def preprocess_dlbp_data(in_files):
             # print(paper_title_dict[paper_id].encode("utf-8"), type(paper_title_dict[paper_id].encode("utf-8")))
             # print(paper_title_dict[paper_id].encode("utf-8")[83])
             f.write(paper_id + "\t" + paper_title_dict[paper_id] + "\n")
+
+
+def preprocess_imdb_data():
+    movieactors = open("data/imdb/movieactors.tsv")
+    moviecrew = open("data/imdb/moviecrew.tsv")
+    movieinfo = open("data/imdb/movieinfo.tsv")
+    movieratings = open("data/imdb/ratings.tsv")
+
+    title_actors = defaultdict(list)
+    title_genres = defaultdict(list)
+    title_writers = defaultdict(list)
+    title_directors = defaultdict(list)
+
+    viewed_movies = set()
+
+    firstline = movieratings.readline()
+    for line in movieratings:
+        l = line.split("\t")
+        title = l[0].strip()
+        nviews = l[2].strip()
+        if nviews!="\N" and int(nviews)>10:
+            viewed_movies.add(title)
+
+    recent_movies = set()
+    firstline = movieinfo.readline()
+    for line in movieinfo:
+        l = line.split("\t")
+        title = l[0].strip()
+        genres = l[8].strip()
+        year = l[5].strip()
+        isAdult = l[4].strip()
+        type = l[1].strip()
+        if isAdult=="0" and type=="movie" and year!="\N" and int(year)>=2008 and title in viewed_movies:
+            recent_movies.add(title)
+            if genres and genres!="\N":
+                genres = genres.split(",")
+                title_genres[title] += genres
+
+    firstline = moviecrew.readline()
+    for line in moviecrew:
+        l = line.split("\t")
+        title = l[0].strip()
+        directors = l[1].strip()
+        writers = l[2].strip()
+        if title in recent_movies:
+            if directors and directors!="\N":
+                directors = directors.split(",")
+                title_directors[title] += directors
+            if writers and writers!="\N":
+                writers = writers.split(",")
+                title_writers[title] += writers
+
+    firstline = movieactors.readline()
+    for line in movieactors:
+        l = line.split("\t")
+        title = l[0].strip()
+        category = l[3].strip()
+        if title in recent_movies and category in ["actor", "actress"]:
+            actor = l[2]
+            title_actors[title].append(actor)
+
+    with open("data/imdb/parsed/actor_title.tsv", "w+") as f:
+        for title_id in title_actors:
+            for actor_id in title_actors[title_id]:
+                f.write(actor_id + "\t" + title_id + "\n")
+
+    with open("data/imdb/parsed/director_title.tsv", "w+") as f:
+        for title_id in title_directors:
+            for director_id in title_directors[title_id]:
+                f.write(director_id + "\t" + title_id + "\n")
+
+    with open("data/imdb/parsed/title_writer.tsv", "w+") as f:
+        for title_id in title_writers:
+            for writer_id in title_writers[title_id]:
+                f.write(title_id + "\t" + writer_id + "\n")
+
+    with open("data/imdb/parsed/genre_title.tsv", "w+") as f:
+        for title_id in title_genres:
+            for genre_id in title_genres[title_id]:
+                f.write(genre_id + "\t" + title_id + "\n")
+
+    print(len(recent_movies))
+
+
+def preprocess_yelp_data():
+    reviews = open("data/yelp/review.json")
+    users = open("data/yelp/user.json")
+    business = open("data/yelp/business.json")
+    business_users = defaultdict(list)
+    user_business = defaultdict(list)
+    business_categories = defaultdict(list)
+    user_users = defaultdict(list)
+
+    state_count = defaultdict(int)
+    categories_count = defaultdict(int)
+
+    i = 0
+    for line in business:
+        data = json.loads(line)  # json corresponding to one paper
+        business_id = data["business_id"]
+        num_reviews = data["review_count"]
+        state = data["state"]
+        stars = data["stars"]
+
+        if num_reviews >= 10 and state in ["AZ"] and stars >= 3:
+            if data["categories"]:
+                categories = data["categories"].split(", ")
+                for c in categories:
+                    categories_count[c] += 1
+                    business_categories[business_id].append(c)
+
+    print("businesses")
+
+    # users = set()
+    for line in reviews:
+        data = json.loads(line)
+        user_id = data["user_id"]
+        business_id = data["business_id"]
+        stars = data["stars"]
+
+        if stars>=3 and business_id in business_categories:
+            business_users[business_id].append(user_id)
+            user_business[user_id].append(business_id)
+    active_users = {u:user_business[u] for u in user_business if len(user_business[u]) >= 5}
+    print(len(user_business))
+    print(len(active_users))
+
+    for line in users:
+        data = json.loads(line)
+        user_id = data["user_id"]
+        friends = data["friends"]
+        ratings = data["review_count"]
+        if len(friends) >= 5 and user_id in active_users:
+            user_users[user_id] += friends
+            i += 1
+            if i % 10000 == 0:
+                print(i)
+
+    print(len(user_users))
+    print("users")
+
+
+    print(len([c for c in categories_count if categories_count[c] >= 10]))
+    # print(set(all_categories))
+    print(sorted(categories_count.items(), key=operator.itemgetter(1), reverse=True))
+
+
+def preprocess_amazon_data():
+    meta_file = open("data/amazon/amazon-meta.txt")
+    product_products = defaultdict(list)
+    product_users = defaultdict(list)
+    product_categories = defaultdict(list)
+
+    categories = set()
+
+    group = None
+
+    for line in meta_file:
+        if line.startswith("ASIN"):
+            product_id = line.split(":")[1].strip()
+
+        elif line.strip().startswith("group"):
+            group = line.split(":")[1].strip()
+
+        if group == "Book":
+            if line.strip().startswith("similar"):
+                similar = line.split(":")[1].strip().split()[1:]
+                product_products[product_id] = similar
+
+            elif "cutomer:" in line:
+                customer = line.split("cutomer:")[1].strip().split()[0]
+                rating = int(line.split("rating:")[1].strip().split()[0])
+                if rating > 2:
+                    product_users[product_id].append(customer)
+
+            elif line.strip().startswith("|"):
+                category = line.strip().split("|")[3]
+                product_categories[product_id].append(category)
+                categories.add(category)
+
+    print(len(product_products))
+    nums = sorted([len(product_users[product_id]) for product_id in product_users if len(product_users[product_id]) >=10 ])
+    print(len(nums))
+    print(sum([len(product_users[product_id]) for product_id in product_users]))
+
+    frequent_products = set([product_id for product_id in product_users if len(product_users[product_id]) >=10])
+
+    with open("data/amazon/parsed/product_user.tsv", "w+") as f:
+        for product_id in product_users:
+            if product_id in frequent_products:
+                for user_id in product_users[product_id]:
+                    f.write(product_id + "\t" + user_id + "\n")
+
+    with open("data/amazon/parsed/product_product.tsv", "w+") as f:
+        for product_id in product_products:
+            if product_id in frequent_products:
+                for product_id_2 in product_products[product_id]:
+                    f.write(product_id + "\t" + product_id_2 + "\n")
+
+    with open("data/amazon/parsed/category_product.tsv", "w+") as f:
+
+        for product_id in product_categories:
+            if product_id in frequent_products:
+                for category_id in set(product_categories[product_id]):
+                    f.write(category_id + "\t" + product_id + "\n")
+
+
 
 # def visualize(in_embeddings, out_file):
 #     f = open(in_embeddings)
@@ -233,7 +441,7 @@ def split_test_train(G, edge_type, seed, val_size=0.1, test_size=0.1):
                 e = (nodes_0[i], nodes_0[j]) if nodes_0[i] < nodes_0[j] else (nodes_0[j], nodes_0[i])
                 train_edges.append(e)
 
-    train_edges = set(train_edges).difference(test_positive).difference(test_negative)
+    train_edges = set(train_edges).difference(test_positive).difference(test_negative).difference(val_positive).difference(val_negative)
     print("time:", time.time() - t, "| train edges", len(train_edges))
 
     print("Is G_train connected?", nx.is_connected(G_train))
@@ -310,6 +518,7 @@ def get_edge_adj_matrices(G, edge_types):
 def build_edgelist(in_files, dataset):
     with open(dataset + "_edgelist.tsv", "w+") as out_file:
         for f_name in in_files:
+            print(f_name)
             first = f_name.split("/")[-1].split(".")[0].split("_")[0]
             second = f_name.split("/")[-1].split(".")[0].split("_")[1]
             with open(f_name) as f:
@@ -317,10 +526,14 @@ def build_edgelist(in_files, dataset):
                     splited = line.strip().split("\t")
                     out_file.write(first + "_" + splited[0] + "\t" + second + "_" + splited[1] + "\n")
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    # preprocess_amazon_data()
+    # build_edgelist(["data/amazon/parsed/product_user.tsv", "data/amazon/parsed/product_product.tsv","data/amazon/parsed/category_product.tsv"], "data/amazon/parsed/amazon")
+    # preprocess_imdb_data()
 #     preprocess_sicris_data("data/sicris/data.tab")
-#     build_edgelist(["data/sicris/parsed/author_field.tsv", "data/sicris/parsed/author_paper.tsv"], "data/sicris/parsed/sicris")
+#     build_edgelist(["data/imdb/parsed/actor_title.tsv", "data/imdb/parsed/director_title.tsv", "data/imdb/parsed/genre_title.tsv", "data/imdb/parsed/title_writer.tsv"], "data/imdb/parsed/imdb")
 #     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
 #     # visualize("data/exp/embed.women.wew.w50.l5.txt", "data/exp/women_tsne.pdf")
 #     G, A = load_data("data/bio/parsed/bio_edgelist.tsv")
 #     print(A.shape)
+    preprocess_yelp_data()
