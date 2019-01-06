@@ -117,6 +117,18 @@ elif dataset_str == "sicris":
     edge_types_strings = ["author_field", "author_paper"]
     type_num_dict = {"field": 0, "paper": 1, "author": 2}
     num_type_dict = {0: "field", 1: "paper", 2: "author"}
+elif dataset_str == "imdb":
+    edge_types_strings = ["genre_title", "actor_title", "director_title", "title_writer"]
+    type_num_dict = {"genre":0, "title":1, "actor":2, "director":3, "writer":4}
+    num_type_dict = {0: "genre", 1: "title", 2: "actor", 3:"director", 4:"writer"}
+elif dataset_str == "amazon":
+    edge_types_strings = ["category_product", "product_product", "product_user"]
+    type_num_dict = {"category":0, "product":1, "user":2}
+    num_type_dict = {0:"category", 1:"product", 2:"user"}
+elif dataset_str == "yelp":
+    edge_types_strings = ["business_category", "business_user", "user_user"]
+    type_num_dict = {"business":0, "category":1, "user":2}
+    num_type_dict = {0:"business", 1:"category", 2:"user"}
 
 
 edge_types = []
