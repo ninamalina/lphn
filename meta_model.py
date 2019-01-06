@@ -4,10 +4,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn import linear_model
-import os
+import time
 import sys
 from utils import read_split
-from generate_meta_paths import MetaPathGeneratorBio, MetaPathGeneratorSicris
+from generate_meta_paths import MetaPathGeneratorBio, MetaPathGeneratorSicris, MetaPathGeneratorImdb
 from subprocess import call
 from collections import defaultdict
 
@@ -114,7 +114,7 @@ class PathEmbeddingClassifier:
 if __name__ == '__main__':
 
     # python meta_model.py bio disease_gene 0 all_combined 100 2
-    dataset = sys.argv[1] # bio, sicris
+    dataset = sys.argv[1] # bio, sicris, imdb
     path = "data/" + dataset +"/parsed/"
     graph_path = path + dataset + "_edgelist.tsv"
     edge_type = sys.argv[2].split("_") # disease_gene
@@ -137,20 +137,28 @@ if __name__ == '__main__':
     p = path + "random_splits/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(random_seed) + "/"
     G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, random_seed, p)
 
+    t0 = time.time()
 
     print("Meta path classifier")
     if dataset == "bio":
         mpg = MetaPathGeneratorBio(random_seed)
     elif dataset == "sicris":
         mpg = MetaPathGeneratorSicris(random_seed)
+    elif dataset == "imdb":
+        mpg = MetaPathGeneratorImdb(random_seed)
 
     mpg.read_data(G_train)
 
+
+
     file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(random_seed) + "/"
     metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, random_seed, numwalks, length)
+    t1 = time.time()
 
+    print("Preparing time", t1 - t0)
     metapath_model.train("LR")
     metapath_model.predict()
+    print("Training time", time.time() - t1)
     print("Acc:", metapath_model.evaluate())
     metapath_model.predict(prob=True)
     print("AUC:", metapath_model.evaluate())

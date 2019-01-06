@@ -138,7 +138,7 @@ def preprocess_imdb_data():
         l = line.split("\t")
         title = l[0].strip()
         nviews = l[2].strip()
-        if nviews!="\N" and int(nviews)>10:
+        if nviews!="\N" and int(nviews)>50:
             viewed_movies.add(title)
 
     recent_movies = set()
@@ -211,7 +211,6 @@ def preprocess_yelp_data():
     business_categories = defaultdict(list)
     user_users = defaultdict(list)
 
-    state_count = defaultdict(int)
     categories_count = defaultdict(int)
 
     i = 0
@@ -222,7 +221,7 @@ def preprocess_yelp_data():
         state = data["state"]
         stars = data["stars"]
 
-        if num_reviews >= 10 and state in ["AZ"] and stars >= 3:
+        if num_reviews >= 20 and state in ["AZ"] and stars >= 3.5:
             if data["categories"]:
                 categories = data["categories"].split(", ")
                 for c in categories:
@@ -241,28 +240,43 @@ def preprocess_yelp_data():
         if stars>=3 and business_id in business_categories:
             business_users[business_id].append(user_id)
             user_business[user_id].append(business_id)
-    active_users = {u:user_business[u] for u in user_business if len(user_business[u]) >= 5}
-    print(len(user_business))
-    print(len(active_users))
+
+    active_users = {u:user_business[u] for u in user_business if len(user_business[u]) >= 10}
 
     for line in users:
         data = json.loads(line)
         user_id = data["user_id"]
         friends = data["friends"]
-        ratings = data["review_count"]
-        if len(friends) >= 5 and user_id in active_users:
-            user_users[user_id] += friends
-            i += 1
-            if i % 10000 == 0:
-                print(i)
 
-    print(len(user_users))
-    print("users")
+        if friends is not "None" and user_id in active_users:
+            for friend in friends.split(", "):
+                if friend in active_users:
+                    user_users[user_id].append(friend)
+
+    # print(len(user_users))
+    print(user_users)
+    active_categories = set([c for c in categories_count if categories_count[c] >= 20])
+
+    with open("data/yelp/parsed/business_category.tsv", "w+") as f:
+        for business_id in business_categories:
+            for category_id in set(business_categories[business_id]):
+                if category_id in active_categories:
+                    f.write(business_id + "\t" + category_id + "\n")
+
+    with open("data/yelp/parsed/business_user.tsv", "w+") as f:
+        for user_id in user_business:
+            if user_id in active_users:
+                for business_id in set(user_business[user_id]):
+                    f.write(business_id + "\t" + user_id + "\n")
+
+    with open("data/yelp/parsed/user_user.tsv", "w+") as f:
+        for user_id in user_users:
+            if user_id in active_users:
+                for user_id_2 in set(user_users[user_id]):
+                    f.write(user_id_2 + "\t" + user_id + "\n")
 
 
-    print(len([c for c in categories_count if categories_count[c] >= 10]))
-    # print(set(all_categories))
-    print(sorted(categories_count.items(), key=operator.itemgetter(1), reverse=True))
+
 
 
 def preprocess_amazon_data():
@@ -303,8 +317,8 @@ def preprocess_amazon_data():
     print(len(nums))
     print(sum([len(product_users[product_id]) for product_id in product_users]))
 
-    frequent_products = set([product_id for product_id in product_users if len(product_users[product_id]) >=10])
-
+    frequent_products = set([product_id for product_id in product_users if len(product_users[product_id]) >= 50])
+    print(len(frequent_products))
     with open("data/amazon/parsed/product_user.tsv", "w+") as f:
         for product_id in product_users:
             if product_id in frequent_products:
@@ -528,8 +542,10 @@ if __name__ == '__main__':
     # preprocess_imdb_data()
 #     preprocess_sicris_data("data/sicris/data.tab")
 #     build_edgelist(["data/imdb/parsed/actor_title.tsv", "data/imdb/parsed/director_title.tsv", "data/imdb/parsed/genre_title.tsv", "data/imdb/parsed/title_writer.tsv"], "data/imdb/parsed/imdb")
-#     # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
+    # preprocess_dlbp_data(["data/dblp/dblp-ref-0.json", "data/dblp/dblp-ref-1.json", "data/dblp/dblp-ref-2.json", "data/dblp/dblp-ref-3.json"])
 #     # visualize("data/exp/embed.women.wew.w50.l5.txt", "data/exp/women_tsne.pdf")
 #     G, A = load_data("data/bio/parsed/bio_edgelist.tsv")
 #     print(A.shape)
     preprocess_yelp_data()
+    build_edgelist(["data/yelp/parsed/business_user.tsv", "data/yelp/parsed/business_category.tsv",
+                    "data/yelp/parsed/user_user.tsv"], "data/yelp/parsed/yelp")

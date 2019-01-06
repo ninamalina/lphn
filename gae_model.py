@@ -67,11 +67,8 @@ adj_orig.eliminate_zeros()
 p = dataset_path + "random_splits/" + edge_type + "/random" + str(random_seed) + "/"
 print(p)
 G_train, test_positive_e, test_negative_e, val_positive_e, val_negative_e, train_edges = read_split(G, edge_type.split("_"), random_seed, p)
-print(len(test_negative_e))
-print(len(test_positive_e))
-print(len(val_positive_e))
-print(len(val_negative_e))
 
+t0 = time.time()
 
 adj_train = nx.to_scipy_sparse_matrix(G_train, nodelist=nodes)
 adj = adj_train
@@ -201,6 +198,7 @@ for epoch in range(FLAGS.epochs):
 
 print("Optimization Finished!")
 
+print("Time:", time.time() - t0)
 _, roc_score, ap_score = get_roc_score(test_positive, test_negative, adj_rec=best_preds)
 print('Test ROC score: ' + str(roc_score))
 print('Test AP score: ' + str(ap_score))
