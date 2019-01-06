@@ -7,7 +7,7 @@ from sklearn import linear_model
 import time
 import sys
 from utils import read_split
-from generate_meta_paths import MetaPathGeneratorBio, MetaPathGeneratorSicris, MetaPathGeneratorImdb
+from generate_meta_paths import MetaPathGeneratorBio, MetaPathGeneratorSicris, MetaPathGeneratorImdb, MetaPathGeneratorAmazon
 from subprocess import call
 from collections import defaultdict
 
@@ -146,6 +146,8 @@ if __name__ == '__main__':
         mpg = MetaPathGeneratorSicris(random_seed)
     elif dataset == "imdb":
         mpg = MetaPathGeneratorImdb(random_seed)
+    elif dataset == "amazon":
+        mpg = MetaPathGeneratorAmazon(random_seed)
 
     mpg.read_data(G_train)
 
