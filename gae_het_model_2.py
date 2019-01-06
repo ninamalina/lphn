@@ -4,8 +4,7 @@ from __future__ import print_function
 import time
 import os
 
-# Train on CPU (hide GPU) due to memory constraints
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
+
 
 import tensorflow as tf
 import numpy as np
@@ -19,6 +18,15 @@ from gaehet.model import GCNModelAEHet
 from gaehet.preprocessing import construct_feed_dict, sparse_to_tuple, preprocess_graph
 import networkx as nx
 from utils import read_split, load_graph_data, get_edge_adj_matrices
+
+# Train on CPU (hide GPU) due to memory constraints
+# os.environ['CUDA_VISIBLE_DEVICES'] = ""
+
+# Train on GPU
+os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
 
 def construct_placeholders(edge_types):
     placeholders = {
