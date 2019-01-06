@@ -2,14 +2,11 @@ import warnings
 warnings.filterwarnings("ignore")
 import networkx as nx 
 import json
-from pprint import pprint
 import time
 import io
 from sklearn.manifold import TSNE
 import numpy as np
 import matplotlib.pyplot as plt
-# import seaborn as sns
-# import random
 import os
 from collections import defaultdict
 import scipy.sparse as sp
@@ -445,9 +442,8 @@ def split_test_train(G, edge_type, seed, val_size=0.1, test_size=0.1):
     print("time:", time.time() - t, "| train edges", len(train_edges))
 
     print("Is G_train connected?", nx.is_connected(G_train))
-    # TODO: remove "dependencies" in some graphs
 
-    return G_train, list(test_positive), list(test_negative), list(val_positive), list(val_negative), list(train_edges)
+    return G_train, np.array(list(test_positive)), np.array(list(test_negative)), np.array(list(val_positive)), np.array(list(val_negative)), np.array(list(train_edges))
 
 
 def read_split(GC, edge_type, num, path=None):

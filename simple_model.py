@@ -1,13 +1,12 @@
 import networkx as nx
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
 from sklearn import linear_model
-from sklearn.ensemble import AdaBoostClassifier
 import os
 import sys
 from utils import read_split
+import time
 
 
 class SimpleClassifier:
@@ -52,13 +51,11 @@ class SimpleClassifier:
                 is_improving = False
                 for feature in features:
                     current_selected = best_features + features[feature]
-                    print(current_selected)
                     clf = linear_model.LogisticRegression(class_weight="balanced", random_state=seed)
                     clf.fit(self.X_train[:,current_selected], self.Y_train)
                     pred = clf.predict_proba(self.X_val[:,current_selected])[:,1]
-                    print(pred)
                     current_roc = roc_auc_score(self.Y_val, pred)
-                    print(current_roc)
+                    print(current_selected, current_roc)
                     if current_roc > best_roc:
                         is_improving = True
                         feature_to_add = feature
@@ -170,8 +167,13 @@ if __name__ == '__main__':
     G_train, test_positive, test_negative, val_positive, val_negative, train_edges = read_split(GC, edge_type, num, p)
 
     p = path + "features/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(num) + "/"
+    t0 = time.time()
     simple_model = SimpleClassifier(G_train, train_edges, test_positive, test_negative, val_positive, val_negative, p)
+    t1 = time.time()
+    print("Preparation:", t1 - t0)
     simple_model.train(method, num)
+    print("Training:", time.time() - t1)
+
     simple_model.predict()
     print("Acc:", simple_model.evaluate())
     simple_model.predict(prob=True)
