@@ -208,6 +208,210 @@ class MetaPathGeneratorSicris:
                 outfile.write(outline + "\n")
                 author = a0
 
+class MetaPathGeneratorImdb:
+    def __init__(self, seed):
+        self.gene_genes = defaultdict(list)
+        self.gene_diseases = defaultdict(list)
+        self.disease_genes = defaultdict(list)
+        self.drug_genes = defaultdict(list)
+        self.gene_drugs = defaultdict(list)
+        random.seed(seed)
+
+
+class MetaPathGeneratorAmazon:
+    def __init__(self, seed):
+        self.product_products = defaultdict(list)
+        self.user_products = defaultdict(list)
+        self.product_users = defaultdict(list)
+        self.product_categories = defaultdict(list)
+        self.category_products = defaultdict(list)
+        random.seed(seed)
+
+    def read_data(self, G):
+        for edge in G.edges():
+            first_type = edge[0].split("_")[0]
+            second_type = edge[1].split("_")[0]
+            if first_type == "product" and second_type == "category":
+                self.product_categories[edge[0]].append(edge[1])
+                self.category_products[edge[1]].append(edge[0])
+            elif first_type == "category" and second_type == "product":
+                self.category_products[edge[0]].append(edge[1])
+                self.product_categories[edge[1]].append(edge[0])
+            elif first_type == "product" and second_type == "product":
+                self.product_products[edge[0]].append(edge[1])
+                self.product_products[edge[1]].append(edge[0])
+            elif first_type == "product" and second_type == "user":
+                self.product_users[edge[0]].append(edge[1])
+                self.user_products[edge[1]].append(edge[0])
+            elif first_type == "user" and second_type == "product":
+                self.user_products[edge[0]].append(edge[1])
+                self.product_users[edge[1]].append(edge[0])
+
+
+    def generate_walks(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # product-product paths
+        for product in self.product_products:
+            p0 = product
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    products = self.product_products[product]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                outfile.write(outline + "\n")
+                product = p0
+
+        # user-product-user paths
+        for user in self.user_products:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    products = self.user_products[user]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                    users = self.product_users[product]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                outfile.write(outline + "\n")
+                user = u0
+
+        # product-user-product paths
+        for product in self.product_users:
+            p0 = product
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    users = self.product_users[product]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                    products = self.user_products[user]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                outfile.write(outline + "\n")
+                product = p0
+
+        # category-product-category paths
+        for category in self.category_products:
+            c0 = category
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    products = self.category_products[category]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                    categories = self.product_categories[product]
+                    category = random.sample(categories, 1).pop()
+                    outline += " " + category
+                outfile.write(outline + "\n")
+                category = c0
+
+        # product-category-product paths
+        for product in self.product_categories:
+            p0 = product
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    categories = self.product_categories[product]
+                    category = random.sample(categories, 1).pop()
+                    outline += " " + category
+                    products = self.category_products[category]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                outfile.write(outline + "\n")
+                product = p0
+
+
+    def generate_walks_2(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        all_products = set(self.product_categories.keys() + self.product_users.keys() + self.product_products.keys())
+        # product - category - product - user - product
+        for product in all_products:
+            p0 = product
+            for j in xrange(0, numwalks):  # num walks
+                outline = p0
+                for i in xrange(0, walklength):
+                    categories = self.product_categories[product]
+                    if categories:
+                        category = random.sample(categories, 1).pop()
+                        outline += " " + category
+                        products = self.category_products[category]
+                        product = random.sample(products, 1).pop()
+                        outline += " " + product
+                        users = self.product_users[product]
+                        if users:
+                            user = random.sample(users, 1).pop()
+                            outline += " " + user
+                            products = self.user_products[user]
+                            product = random.sample(products, 1).pop()
+                            outline += " " + product
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                product = p0
+
+        # category - product - user - product - category
+        for category in self.category_products:
+            c0 = category
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    products = self.category_products[category]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                    users = self.product_users[product]
+                    if users:
+                        user = random.sample(users, 1).pop()
+                        outline += " " + user
+                        products = self.user_products[user]
+                        product = random.sample(products, 1).pop()
+                        outline += " " + product
+                        categories = self.product_categories[product]
+                        if categories:
+                            category = random.sample(categories, 1).pop()
+                            outline += " " + category
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                category = c0
+
+        # user - product - category - product - user
+        for user in self.user_products:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    products = self.user_products[user]
+                    product = random.sample(products, 1).pop()
+                    outline += " " + product
+                    categories = self.product_categories[product]
+                    if categories:
+                        category = random.sample(categories, 1).pop()
+                        outline += " " + category
+                        products = self.category_products[category]
+                        product = random.sample(products, 1).pop()
+                        outline += " " + product
+                        users = self.product_users[product]
+                        if users:
+                            user = random.sample(users, 1).pop()
+                            outline += " " + user
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                user = u0
+
 
 class MetaPathGeneratorBio:
     def __init__(self, seed):
