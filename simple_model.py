@@ -117,19 +117,19 @@ class SimpleClassifier:
             if i%1000000 == 0:
                 print(i)
 
-        return X
+        return np.array(X)
 
     def prepare_train(self, G_train, train_edges):
         self.X_train = self.create_features(G_train, train_edges)
-        self.Y_train = [int(G_train.has_edge(i,j)) for (i,j) in train_edges]
+        self.Y_train = np.array([int(G_train.has_edge(i,j)) for (i,j) in train_edges])
 
     def prepare_test(self, G_train, test_edges, Y_test):
         self.X_test = self.create_features(G_train, test_edges)
-        self.Y_test = Y_test
+        self.Y_test = np.array(Y_test)
 
     def prepare_val(self, G_train, val_edges, Y_val):
         self.X_val = self.create_features(G_train, val_edges)
-        self.Y_val = Y_val
+        self.Y_val = np.array(Y_val)
 
     def save(self, path):
         np.save(path + "X_train", self.X_train)
