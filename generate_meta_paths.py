@@ -668,170 +668,209 @@ class MetaPathGeneratorYelp:
                 self.user_businesses[edge[0]].append(edge[1])
                 self.business_users[edge[1]].append(edge[0])
 
-    #
-    # def generate_walks(self, outfilename, numwalks, walklength):
-    #     outfile = open(outfilename, 'w')
-    #
-    #     # user-user paths
-    #     for user in self.user_users:
-    #         u0 = user
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = u0
-    #             for i in xrange(0, walklength):
-    #                 users = self.user_users[user]
-    #                 user = random.sample(users, 1).pop()
-    #                 outline += " " + user
-    #             outfile.write(outline + "\n")
-    #             user = u0
-    #
-    #     # user-business-user paths
-    #     for user in self.user_products:
-    #         u0 = user
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = u0
-    #             for i in xrange(0, walklength):
-    #                 products = self.user_products[user]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #                 users = self.product_users[product]
-    #                 user = random.sample(users, 1).pop()
-    #                 outline += " " + user
-    #             outfile.write(outline + "\n")
-    #             user = u0
-    #
-    #     # business-user-business paths
-    #     for product in self.product_users:
-    #         p0 = product
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = p0
-    #             for i in xrange(0, walklength):
-    #                 users = self.product_users[product]
-    #                 user = random.sample(users, 1).pop()
-    #                 outline += " " + user
-    #                 products = self.user_products[user]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #             outfile.write(outline + "\n")
-    #             product = p0
-    #
-    #     # category-product-category paths
-    #     for category in self.category_products:
-    #         c0 = category
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = c0
-    #             for i in xrange(0, walklength):
-    #                 products = self.category_products[category]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #                 categories = self.product_categories[product]
-    #                 category = random.sample(categories, 1).pop()
-    #                 outline += " " + category
-    #             outfile.write(outline + "\n")
-    #             category = c0
-    #
-    #     # product-category-product paths
-    #     for product in self.product_categories:
-    #         p0 = product
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = p0
-    #             for i in xrange(0, walklength):
-    #                 categories = self.product_categories[product]
-    #                 category = random.sample(categories, 1).pop()
-    #                 outline += " " + category
-    #                 products = self.category_products[category]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #             outfile.write(outline + "\n")
-    #             product = p0
-    #
-    #
-    # def generate_walks_2(self, outfilename, numwalks, walklength):
-    #     outfile = open(outfilename, 'w')
-    #
-    #     all_products = set(self.product_categories.keys() + self.product_users.keys() + self.product_products.keys())
-    #     # product - category - product - user - product
-    #     for product in all_products:
-    #         p0 = product
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = p0
-    #             for i in xrange(0, walklength):
-    #                 categories = self.product_categories[product]
-    #                 if categories:
-    #                     category = random.sample(categories, 1).pop()
-    #                     outline += " " + category
-    #                     products = self.category_products[category]
-    #                     product = random.sample(products, 1).pop()
-    #                     outline += " " + product
-    #                     users = self.product_users[product]
-    #                     if users:
-    #                         user = random.sample(users, 1).pop()
-    #                         outline += " " + user
-    #                         products = self.user_products[user]
-    #                         product = random.sample(products, 1).pop()
-    #                         outline += " " + product
-    #                     else:
-    #                         break
-    #                 else:
-    #                     break
-    #
-    #             outfile.write(outline + "\n")
-    #             product = p0
-    #
-    #     # category - product - user - product - category
-    #     for category in self.category_products:
-    #         c0 = category
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = c0
-    #             for i in xrange(0, walklength):
-    #                 products = self.category_products[category]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #                 users = self.product_users[product]
-    #                 if users:
-    #                     user = random.sample(users, 1).pop()
-    #                     outline += " " + user
-    #                     products = self.user_products[user]
-    #                     product = random.sample(products, 1).pop()
-    #                     outline += " " + product
-    #                     categories = self.product_categories[product]
-    #                     if categories:
-    #                         category = random.sample(categories, 1).pop()
-    #                         outline += " " + category
-    #                     else:
-    #                         break
-    #                 else:
-    #                     break
-    #
-    #             outfile.write(outline + "\n")
-    #             category = c0
-    #
-    #     # user - product - category - product - user
-    #     for user in self.user_products:
-    #         u0 = user
-    #         for j in xrange(0, numwalks):  # num walks
-    #             outline = u0
-    #             for i in xrange(0, walklength):
-    #                 products = self.user_products[user]
-    #                 product = random.sample(products, 1).pop()
-    #                 outline += " " + product
-    #                 categories = self.product_categories[product]
-    #                 if categories:
-    #                     category = random.sample(categories, 1).pop()
-    #                     outline += " " + category
-    #                     products = self.category_products[category]
-    #                     product = random.sample(products, 1).pop()
-    #                     outline += " " + product
-    #                     users = self.product_users[product]
-    #                     if users:
-    #                         user = random.sample(users, 1).pop()
-    #                         outline += " " + user
-    #                     else:
-    #                         break
-    #                 else:
-    #                     break
-    #
-    #             outfile.write(outline + "\n")
-    #             user = u0
+
+    def generate_walks(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # user-user paths
+        for user in self.user_users:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    users = self.user_users[user]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                outfile.write(outline + "\n")
+                user = u0
+
+        # user-business-user paths
+        for user in self.user_businesses:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    businesses = self.user_businesses[user]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                    users = self.business_users[business]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                outfile.write(outline + "\n")
+                user = u0
+
+        # business-user-business paths
+        for business in self.business_users:
+            b0 = business
+            for j in xrange(0, numwalks):  # num walks
+                outline = b0
+                for i in xrange(0, walklength):
+                    users = self.business_users[business]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                    businesses = self.user_businesses[user]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                outfile.write(outline + "\n")
+                business = b0
+
+        # category-business-category paths
+        for category in self.category_businesses:
+            c0 = category
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    businesses = self.category_businesses[category]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                    categories = self.business_categories[business]
+                    category = random.sample(categories, 1).pop()
+                    outline += " " + category
+                outfile.write(outline + "\n")
+                category = c0
+
+        # business-category-business paths
+        for business in self.business_categories:
+            b0 = business
+            for j in xrange(0, numwalks):  # num walks
+                outline = b0
+                for i in xrange(0, walklength):
+                    categories = self.business_categories[business]
+                    category = random.sample(categories, 1).pop()
+                    outline += " " + category
+                    businesses = self.category_businesses[category]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                outfile.write(outline + "\n")
+                business = b0
+
+
+    def generate_walks_2(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        all_bussinesses = set(self.business_users.keys() + self.business_categories.keys())
+        # business - category - business - user - business
+        for business in all_bussinesses:
+            b0 = business
+            for j in xrange(0, numwalks):  # num walks
+                outline = b0
+                for i in xrange(0, walklength):
+                    categories = self.business_categories[business]
+                    if categories:
+                        category = random.sample(categories, 1).pop()
+                        outline += " " + category
+                        businesses = self.category_businesses[category]
+                        business = random.sample(businesses, 1).pop()
+                        outline += " " + business
+                        users = self.business_users[business]
+                        if users:
+                            user = random.sample(users, 1).pop()
+                            outline += " " + user
+                            businesses = self.user_businesses[user]
+                            business = random.sample(businesses, 1).pop()
+                            outline += " " + business
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                business = b0
+
+        # business - user - business - category - business
+        for business in all_bussinesses:
+            b0 = business
+            for j in xrange(0, numwalks):  # num walks
+                outline = b0
+                for i in xrange(0, walklength):
+                    users = self.business_users[business]
+                    if users:
+                        user = random.sample(users, 1).pop()
+                        outline += " " + user
+                        businesses = self.user_businesses[user]
+                        business = random.sample(businesses, 1).pop()
+                        outline += " " + business
+                        categories = self.business_categories[business]
+                        if categories:
+                            category = random.sample(categories, 1).pop()
+                            outline += " " + category
+                            businesses = self.category_businesses[category]
+                            business = random.sample(businesses, 1).pop()
+                            outline += " " + business
+                        else:
+                            break
+                    else:
+                        break
+                outfile.write(outline + "\n")
+                business = b0
+
+        # category - business - user - business - category
+        for category in self.category_businesses:
+            c0 = category
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    businesses = self.category_businesses[category]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                    users = self.business_users[business]
+                    if users:
+                        user = random.sample(users, 1).pop()
+                        outline += " " + user
+                        businesses = self.user_businesses[user]
+                        business = random.sample(businesses, 1).pop()
+                        outline += " " + business
+                        categories = self.business_categories[business]
+                        if categories:
+                            category = random.sample(categories, 1).pop()
+                            outline += " " + category
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                category = c0
+
+        # user - business - category - business - user
+        for user in self.user_businesses:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    businesses = self.user_businesses[user]
+                    business = random.sample(businesses, 1).pop()
+                    outline += " " + business
+                    categories = self.business_categories[business]
+                    if categories:
+                        category = random.sample(categories, 1).pop()
+                        outline += " " + category
+                        businesses = self.category_businesses[category]
+                        business = random.sample(businesses, 1).pop()
+                        outline += " " + business
+                        users = self.business_users[business]
+                        if users:
+                            user = random.sample(users, 1).pop()
+                            outline += " " + user
+                        else:
+                            break
+                    else:
+                        break
+
+                outfile.write(outline + "\n")
+                user = u0
+
+        # user-user paths
+        for user in self.user_users:
+            u0 = user
+            for j in xrange(0, numwalks):  # num walks
+                outline = u0
+                for i in xrange(0, walklength):
+                    users = self.user_users[user]
+                    user = random.sample(users, 1).pop()
+                    outline += " " + user
+                outfile.write(outline + "\n")
+                user = u0
 
 
 class MetaPathGeneratorBio:
