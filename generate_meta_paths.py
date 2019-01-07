@@ -210,12 +210,238 @@ class MetaPathGeneratorSicris:
 
 class MetaPathGeneratorImdb:
     def __init__(self, seed):
-        self.gene_genes = defaultdict(list)
-        self.gene_diseases = defaultdict(list)
-        self.disease_genes = defaultdict(list)
-        self.drug_genes = defaultdict(list)
-        self.gene_drugs = defaultdict(list)
+        self.title_actors = defaultdict(list)
+        self.actor_titles = defaultdict(list)
+        self.title_genres = defaultdict(list)
+        self.genre_titles = defaultdict(list)
+        self.title_crews = defaultdict(list)
+        self.crew_titles = defaultdict(list)
         random.seed(seed)
+
+    def read_data(self, G):
+        for edge in G.edges():
+            first_type = edge[0].split("_")[0]
+            second_type = edge[1].split("_")[0]
+            if first_type == "title" and second_type == "actor":
+                self.title_actors[edge[0]].append(edge[1])
+                self.actor_titles[edge[1]].append(edge[0])
+            elif first_type == "actor" and second_type == "title":
+                self.actor_titles[edge[0]].append(edge[1])
+                self.title_actors[edge[1]].append(edge[0])
+            elif first_type == "title" and second_type == "genre":
+                self.title_genres[edge[0]].append(edge[1])
+                self.genre_titles[edge[1]].append(edge[0])
+            elif first_type == "genre" and second_type == "title":
+                self.genre_titles[edge[0]].append(edge[1])
+                self.title_genres[edge[1]].append(edge[0])
+            elif first_type == "title" and second_type == "crew":
+                self.title_crews[edge[0]].append(edge[1])
+                self.crew_titles[edge[1]].append(edge[0])
+            elif first_type == "crew" and second_type == "titlr":
+                self.crew_titles[edge[0]].append(edge[1])
+                self.title_crews[edge[1]].append(edge[0])
+
+    def generate_walks(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # actor - title
+        for actor in self.actor_titles:
+            a0 = actor
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    titles = self.actor_titles[actor]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    actors = self.title_actors[title]
+                    actor = random.sample(actors, 1).pop()
+                    outline += " " + actor
+                outfile.write(outline + "\n")
+                actor = a0
+
+        # title - actor
+        for title in self.title_actors:
+            t0 = title
+            for j in xrange(0, numwalks):  # num walks
+                outline = t0
+                for i in xrange(0, walklength):
+                    actors = self.title_actors[title]
+                    actor = random.sample(actors, 1).pop()
+                    outline += " " + actor
+                    titles = self.actor_titles[actor]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                outfile.write(outline + "\n")
+                title = t0
+
+        # genre - title
+        for genre in self.genre_titles:
+            g0 = genre
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    titles = self.genre_titles[genre]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    genres = self.title_genres[title]
+                    genre = random.sample(genres, 1).pop()
+                    outline += " " + genre
+                outfile.write(outline + "\n")
+                genre = g0
+
+        # title - genre
+        for title in self.title_genres:
+            t0 = title
+            for j in xrange(0, numwalks):  # num walks
+                outline = t0
+                for i in xrange(0, walklength):
+                    genres = self.title_genres[title]
+                    genre = random.sample(genres, 1).pop()
+                    outline += " " + genre
+                    titles = self.genre_titles[genre]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                outfile.write(outline + "\n")
+                title = t0
+
+        # crew - title
+        for crew in self.crew_titles:
+            c0 = crew
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    titles = self.crew_titles[crew]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    crews = self.title_crews[title]
+                    crew = random.sample(crews, 1).pop()
+                    outline += " " + crew
+                outfile.write(outline + "\n")
+                crew = c0
+
+        # title - crew
+        for title in self.title_crews:
+            t0 = title
+            for j in xrange(0, numwalks):  # num walks
+                outline = t0
+                for i in xrange(0, walklength):
+                    crews = self.title_crews[title]
+                    crew = random.sample(crews, 1).pop()
+                    outline += " " + crew
+                    titles = self.crew_titles[crew]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                outfile.write(outline + "\n")
+                title = t0
+
+    def generate_walks_2(self, outfilename, numwalks, walklength):
+        outfile = open(outfilename, 'w')
+
+        # actor - title - crew - title - actor
+        for actor in self.actor_titles:
+            a0 = actor
+            for j in xrange(0, numwalks):  # num walks
+                outline = a0
+                for i in xrange(0, walklength):
+                    titles = self.actor_titles[actor]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    crews = self.title_crews[title]
+                    if crews:
+                        crew = random.sample(crews, 1).pop()
+                        outline += " " + crew
+                        titles = self.crew_titles[crew]
+                        title = random.sample(titles, 1).pop()
+                        outline += " " + title
+                        actors = self.title_actors[title]
+                        if actors:
+                            actor = random.sample(actors, 1).pop()
+                            outline += " " + actor
+                        else:
+                            break
+                else:
+                    break
+                outfile.write(outline + "\n")
+                actor = a0
+
+
+        # genre - title - crew - title - genre
+        for genre in self.genre_titles:
+            g0 = genre
+            for j in xrange(0, numwalks):  # num walks
+                outline = g0
+                for i in xrange(0, walklength):
+                    titles = self.genre_titles[genre]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    crews = self.title_crews[title]
+                    if crews:
+                        crew = random.sample(crews, 1).pop()
+                        outline += " " + crew
+                        titles = self.crew_titles[crew]
+                        title = random.sample(titles, 1).pop()
+                        outline += " " + title
+                        genres = self.title_genres[title]
+                        if genres:
+                            genre = random.sample(genres, 1).pop()
+                            outline += " " + genre
+                        else:
+                            break
+                    else:
+                        break
+                outfile.write(outline + "\n")
+                genre = g0
+
+        # crew - title - actor - title - crew
+        for crew in self.crew_titles:
+            c0 = crew
+            for j in xrange(0, numwalks):  # num walks
+                outline = c0
+                for i in xrange(0, walklength):
+                    titles = self.crew_titles[crew]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    actors = self.title_actors[title]
+                    if actors:
+                        actor = random.sample(actors, 1).pop()
+                        outline += " " + actor
+                        titles = self.actor_titles[actor]
+                        title = random.sample(titles, 1).pop()
+                        outline += " " + title
+                        crews = self.title_crews[title]
+                        if crews:
+                            crew = random.sample(crews, 1).pop()
+                            outline += " " + crew
+                        else:
+                            break
+                    else:
+                        break
+                outfile.write(outline + "\n")
+                crew = c0
+
+        # title - actor - title - genre - title
+        for title in self.title_actors:
+            t0 = title
+            for j in xrange(0, numwalks):  # num walks
+                outline = t0
+                for i in xrange(0, walklength):
+                    actors = self.title_actors[title]
+                    actor = random.sample(actors, 1).pop()
+                    outline += " " + actor
+                    titles = self.actor_titles[actor]
+                    title = random.sample(titles, 1).pop()
+                    outline += " " + title
+                    genres = self.title_genres[title]
+                    if genres:
+                        genre = random.sample(genres, 1).pop()
+                        outline += " " + genre
+                        titles = self.genre_titles[genre]
+                        title = random.sample(titles, 1).pop()
+                        outline += " " + title
+                    else:
+                        break
+                    outfile.write(outline + "\n")
+                title = t0
 
 
 class MetaPathGeneratorAmazon:
