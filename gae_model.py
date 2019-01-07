@@ -20,12 +20,12 @@ import networkx as nx
 import sys
 
 # Train on CPU (hide GPU) due to memory constraints
-# os.environ['CUDA_VISIBLE_DEVICES'] = ""
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
 # Train on GPU
-os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
+# os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+# os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
 
 sys.path.insert(0, "..../lpnh")
 
