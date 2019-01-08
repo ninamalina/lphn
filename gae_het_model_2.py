@@ -20,13 +20,13 @@ import networkx as nx
 from utils import read_split, load_graph_data, get_edge_adj_matrices
 
 # Train on CPU (hide GPU) due to memory constraints
-# os.environ['CUDA_VISIBLE_DEVICES'] = ""
+os.environ['CUDA_VISIBLE_DEVICES'] = ""
 
 # Train on GPU
-os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
+# os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+# os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
 
 def construct_placeholders(edge_types):
     placeholders = {
