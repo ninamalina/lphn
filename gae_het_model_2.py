@@ -24,9 +24,10 @@ if run_on == "cpu":
     # Train on CPU (hide GPU) due to memory constraints
     os.environ['CUDA_VISIBLE_DEVICES'] = ""
 elif run_on == "gpu":
+    device = sys.argv[2]
     # Train on GPU
     os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+    os.environ["CUDA_VISIBLE_DEVICES"] = device
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
 
