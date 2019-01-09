@@ -12,21 +12,23 @@ import scipy.sparse as sp
 
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
-
+import sys
 from gaehet.optimizer import OptimizerAE
 from gaehet.model import GCNModelAEHet
 from gaehet.preprocessing import construct_feed_dict, sparse_to_tuple, preprocess_graph
 import networkx as nx
 from utils import read_split, load_graph_data, get_edge_adj_matrices
 
-# Train on CPU (hide GPU) due to memory constraints
-os.environ['CUDA_VISIBLE_DEVICES'] = ""
-
-# Train on GPU
-# os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
-# os.environ["CUDA_VISIBLE_DEVICES"] = '0'
-# config = tf.ConfigProto()
-# config.gpu_options.allow_growth = True
+run_on = sys.argv[1]
+if run_on == "cpu":
+    # Train on CPU (hide GPU) due to memory constraints
+    os.environ['CUDA_VISIBLE_DEVICES'] = ""
+elif run_on == "gpu":
+    # Train on GPU
+    os.environ["CUDA_DEVICE_ORDER"] = 'PCI_BUS_ID'
+    os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
 
 def construct_placeholders(edge_types):
     placeholders = {
