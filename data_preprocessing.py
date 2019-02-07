@@ -54,8 +54,7 @@ def preprocess_dlbp_data(in_files):
                         venue_index = get_object_index(venue_index_dict, venue)
                     
                         paper_venue.write(str(paper_index) + "\t" + str(venue_index) + "\n")
-                
-                    
+
                 i += 1
                 if i % 100000 == 0:
                     print(i, time.time() - times_start)

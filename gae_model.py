@@ -67,10 +67,6 @@ adj_orig = nx.to_scipy_sparse_matrix(G, nodelist=nodes)
 adj_orig = adj_orig - sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [0]), shape=adj_orig.shape)
 adj_orig.eliminate_zeros()
 
-#
-# adj_train, train_edges, val_edges, val_edges_false, test_edges, test_edges_false = mask_test_edges(adj)
-# adj = adj_train
-
 p = dataset_path + "random_splits/" + edge_type + "/random" + str(random_seed) + "/"
 print(p)
 G_train, test_positive_e, test_negative_e, val_positive_e, val_negative_e, train_edges = read_split(G, edge_type.split("_"), random_seed, p)

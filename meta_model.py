@@ -13,13 +13,6 @@ from subprocess import call
 from collections import defaultdict
 
 
-# edge_functions = {
-#     "hadamard": lambda a, b: a * b,
-#     "average": lambda a, b: 0.5 * (a + b),
-#     "l1": lambda a, b: np.abs(a - b),
-#     "l2": lambda a, b: np.abs(a - b) ** 2,
-# }
-
 class PathEmbeddingClassifier:
     def __init__(self, mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, seed, numwalks, length):
         self.mpg = mpg
@@ -79,7 +72,7 @@ class PathEmbeddingClassifier:
     def generate_embeddings(self, walks_file, embed_file, generated):
         if not generated:
             print("Generating embeddings")
-            call(["./code_metapath2vec/metapath2vec", "-train", walks_file, "-output", embed_file,
+            call(["./metapath2vec/metapath2vec", "-train", walks_file, "-output", embed_file,
                   "-pp", "1", "-size", "32", "-window", "7", "-debug", "2", "-negative", "5", "-threads", "32"])
 
         print("Embeddings generated - reading to array")
@@ -99,7 +92,6 @@ class PathEmbeddingClassifier:
         X = []
         for pair in train_edges:
             features = self.embeddings[pair[0]] * self.embeddings[pair[1]]
-            # features = edge_functions[edge_function](self.embeddings[pair[0]], self.embeddings[pair[1]])
             X.append(features)
         return X
 
@@ -114,8 +106,7 @@ class PathEmbeddingClassifier:
 
 if __name__ == '__main__':
 
-    # python meta_model.py bio disease_gene 0 all_combined 100 2
-    dataset = sys.argv[1] # bio, sicris, imdb
+    dataset = sys.argv[1] # bio, sicris, imdb, ...
     path = "data/" + dataset +"/parsed/"
     graph_path = path + dataset + "_edgelist.tsv"
     edge_type = sys.argv[2].split("_") # disease_gene
@@ -123,7 +114,6 @@ if __name__ == '__main__':
     meta_path = sys.argv[4] # all_combined OR long
     numwalks = int(sys.argv[5]) # 100
     length = int(sys.argv[6]) # 100
-
 
     f = open(graph_path)
     G = nx.Graph()
@@ -154,18 +144,12 @@ if __name__ == '__main__':
 
     mpg.read_data(G_train)
 
-
-
     file_path = path + "embeddings/" + edge_type[0] + "_" + edge_type[1] + "/random" + str(random_seed) + "/"
     metapath_model = PathEmbeddingClassifier(mpg, G_train, train_edges, test_positive, test_negative, meta_path, file_path, random_seed, numwalks, length)
     t1 = time.time()
 
     print("Preparing time", t1 - t0)
     metapath_model.train("LR")
-    metapath_model.predict()
     print("Training time", time.time() - t1)
-    print("Acc:", metapath_model.evaluate())
     metapath_model.predict(prob=True)
     print("AUC:", metapath_model.evaluate())
-
-    print("confussion:", metapath_model.evaluate(metric="confussion"))

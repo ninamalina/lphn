@@ -143,7 +143,6 @@ class SimpleClassifier:
 
 if __name__ == '__main__':
 
-    # python simple_model.py bio drug_gene 0 FS
     dataset = sys.argv[1]
     path = "data/" + dataset + "/parsed/"
     graph_path = path + dataset + "_edgelist.tsv"
